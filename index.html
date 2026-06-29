@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AI 모바일 모의 면접관 v1.4</title>
+  <title>AI 모바일 모의 면접관 v1.6</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -53,8 +53,8 @@
 
 <div class="app-container">
   <header>
-    <h1>🎯 AI 모의 면접관 <span style="font-size:0.8rem; vertical-align:middle; background:#2563eb; color:#fff; padding:2px 6px; border-radius:4px;">v1.4</span></h1>
-    <p>다음 문항 네비게이션 락 해제 완료 버전</p>
+    <h1>🎯 AI 모의 면접관 <span style="font-size:0.8rem; vertical-align:middle; background:#2563eb; color:#fff; padding:2px 6px; border-radius:4px;">v1.6</span></h1>
+    <p>사정관 평가 10대 요약 평정 루틴 반영 버전</p>
   </header>
 
   <div class="content">
@@ -109,10 +109,10 @@
       </div>
 
       <div id="feedback-container" class="feedback-box" style="display:none;">
-        <h3 style="margin-top:0; color:#166534;">📊 AI 단문 채점 결과</h3>
-        <p><strong>점수:</strong> <span id="fb-total" style="font-weight:bold; color:#166534;">0</span>점</p>
-        <p><strong>👍 우수함:</strong> <span id="fb-good"></span></p>
-        <p><strong>⚠️ 보완점:</strong> <span id="fb-bad"></span></p>
+        <h3 style="margin-top:0; color:#166534;">📊 AI 입학사정관 정밀 피드백</h3>
+        <p><strong>평정 점수:</strong> <span id="fb-total" style="font-weight:bold; color:#166534;">0</span>점</p>
+        <p style="font-size:0.9rem; line-height:1.4; color:#1e3a8a;"><strong style="color:#2563eb;">✔ 우수한 장점 분석:</strong><br><span id="fb-good"></span></p>
+        <p style="font-size:0.9rem; line-height:1.4; color:#991b1b;"><strong style="color:#dc2626;">⚠️ 사정관 관점 보완점:</strong><br><span id="fb-bad"></span></p>
         <button class="btn btn-primary" onclick="nextQuestion()" style="margin-top:16px; width:100%; font-size:1rem; padding:12px;">다음 문항으로 이동 ➡️</button>
       </div>
 
@@ -137,8 +137,8 @@
 </div>
 
 <script>
-  // 🚨 [필수 확인] 본인의 구글 웹 앱 URL 주소를 여기에 넣어주세요!
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxVYuh2N9a_pxojGJ-t7LdWUhmQJUburGpLceZCIzylmijhOkESqyqQIJOARWku_FxvsA/exec"; 
+  // 🚨 [필수 확인] 본인의 구글 웹 앱 URL 주소를 여기에 꼭 교체해 주세요!
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxuhS_g9FfYygt2lctl4FUCFaZkYqeoClLA_NXVgD9mbiNeU02kGPboZ-3991bOOtpU/exec"; 
 
   let interviewQuestions = [];
   let currentIdx = 0;
@@ -195,17 +195,10 @@
   function speak(text) {
     if (typeof speechSynthesis === 'undefined') return;
     speechSynthesis.cancel(); 
-    
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'ko-KR'; 
-    
     const select = document.getElementById('voice-select');
-    if (voices[select.value]) {
-      utterance.voice = voices[select.value];
-    } else if (voices.length > 0) {
-      utterance.voice = voices[0];
-    }
-    
+    if (voices[select.value]) utterance.voice = voices[select.value];
     utterance.rate = parseFloat(document.getElementById('voice-rate').value); 
     speechSynthesis.speak(utterance);
   }
@@ -296,7 +289,6 @@
       document.getElementById('btn-speak').style.display = 'none';
       document.getElementById('feedback-container').style.display = 'none';
       document.getElementById('final-report-panel').style.display = 'block';
-      // 다음 면접 종료 시 하단바 숨김 처리로 깔끔한 마무리
       document.getElementById('control-bar').style.display = 'none'; 
       return;
     }
@@ -326,7 +318,6 @@
     if(interviewQuestions[currentIdx]) speak(interviewQuestions[currentIdx].question);
   }
 
-  // 🛠️ [기능 보완] 다음 문항으로 깔끔하게 밀어주는 함수 가드
   function nextQuestion() {
     currentIdx++;
     renderQuestion();
@@ -372,16 +363,22 @@
     }
   }
 
-  // 🛠️ [기능 보완] 채점이 완료되는 시점에 이전/제출 버튼 상태를 안전하게 초기화
   function submitAnswer() {
     const q = interviewQuestions[currentIdx].question;
+    const qType = interviewQuestions[currentIdx].type; // 💡 [v1.6 추가] 질문 카테고리 정보 패치
     const ans = document.getElementById('student-answer').value;
     setStatus('AI 채점 분석 중...', false);
     document.getElementById('btn-submit').disabled = true;
     
     fetch(GAS_WEB_APP_URL, {
       method: "POST",
-      body: JSON.stringify({ action: "evaluateAnswer", question: q, answer: ans, intensity: document.getElementById('interview-type').value })
+      body: JSON.stringify({ 
+        action: "evaluateAnswer", 
+        question: q, 
+        type: qType, 
+        answer: ans, 
+        intensity: document.getElementById('interview-type').value 
+      })
     })
     .then(res => res.json())
     .then(fb => {
@@ -390,14 +387,12 @@
       document.getElementById('fb-bad').innerText = fb.bad_point;
       
       interviewHistory.push({
-        type: interviewQuestions[currentIdx].type, question: q, answer: ans,
+        type: qType, question: q, answer: ans,
         score: fb.total_score, good: fb.good_point, bad: fb.bad_point
       });
 
       document.getElementById('feedback-container').style.display = 'block';
       setStatus('평가 완료', false);
-      
-      // 채점 즉시 스크롤을 피드백 화면으로 매끄럽게 이동
       document.getElementById('feedback-container').scrollIntoView({ behavior: 'smooth' });
     })
     .catch(err => { alert("평가 에러"); document.getElementById('btn-submit').disabled = false; });
