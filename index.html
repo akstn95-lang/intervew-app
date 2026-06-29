@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AI 모바일 모의 면접관 v1.3</title>
+  <title>AI 모바일 모의 면접관 v1.4</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -44,7 +44,7 @@
     .btn-success { background: #16a34a; }
     .btn-secondary { background: #64748b; }
     .btn-warning { background: #ea580c; }
-    .btn:disabled { background: #cbd5e1; color: #94a3b8; !important; }
+    .btn:disabled { background: #cbd5e1; color: #94a3b8; }
     .feedback-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; padding: 16px; margin-top: 16px; }
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
   </style>
@@ -53,8 +53,8 @@
 
 <div class="app-container">
   <header>
-    <h1>🎯 AI 모의 면접관 <span style="font-size:0.8rem; vertical-align:middle; background:#2563eb; color:#fff; padding:2px 6px; border-radius:4px;">v1.3</span></h1>
-    <p>이전 문항 활성화 가드 및 오디오 안정화 통합 패치</p>
+    <h1>🎯 AI 모의 면접관 <span style="font-size:0.8rem; vertical-align:middle; background:#2563eb; color:#fff; padding:2px 6px; border-radius:4px;">v1.4</span></h1>
+    <p>다음 문항 네비게이션 락 해제 완료 버전</p>
   </header>
 
   <div class="content">
@@ -113,7 +113,7 @@
         <p><strong>점수:</strong> <span id="fb-total" style="font-weight:bold; color:#166534;">0</span>점</p>
         <p><strong>👍 우수함:</strong> <span id="fb-good"></span></p>
         <p><strong>⚠️ 보완점:</strong> <span id="fb-bad"></span></p>
-        <button class="btn btn-primary" onclick="nextQuestion()" style="margin-top:16px;">다음 문항으로 이동 ➡️</button>
+        <button class="btn btn-primary" onclick="nextQuestion()" style="margin-top:16px; width:100%; font-size:1rem; padding:12px;">다음 문항으로 이동 ➡️</button>
       </div>
 
       <div id="final-report-panel" class="card" style="display:none; text-align:center; background:#f0fdf4; border:1px solid #bbf7d0;">
@@ -138,7 +138,7 @@
 
 <script>
   // 🚨 [필수 확인] 본인의 구글 웹 앱 URL 주소를 여기에 넣어주세요!
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwRSYrjWggPVAD0C9ue-quxsLbREGxYLr6bgzeKe7d-QuOwKDpjtrVQRmeNbVYzP0-zgw/exec"; 
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxVYuh2N9a_pxojGJ-t7LdWUhmQJUburGpLceZCIzylmijhOkESqyqQIJOARWku_FxvsA/exec"; 
 
   let interviewQuestions = [];
   let currentIdx = 0;
@@ -296,6 +296,8 @@
       document.getElementById('btn-speak').style.display = 'none';
       document.getElementById('feedback-container').style.display = 'none';
       document.getElementById('final-report-panel').style.display = 'block';
+      // 다음 면접 종료 시 하단바 숨김 처리로 깔끔한 마무리
+      document.getElementById('control-bar').style.display = 'none'; 
       return;
     }
     
@@ -307,7 +309,6 @@
     document.getElementById('btn-submit').disabled = true;
     finalSpeechResult = ""; 
     
-    // 🛠️ [이전 문항 버튼 오류 수정] 조건문을 더욱 엄격하게 제어하여 완벽 활성화
     if (currentIdx === 0) {
       document.getElementById('btn-prev').disabled = true;
     } else {
@@ -325,6 +326,7 @@
     if(interviewQuestions[currentIdx]) speak(interviewQuestions[currentIdx].question);
   }
 
+  // 🛠️ [기능 보완] 다음 문항으로 깔끔하게 밀어주는 함수 가드
   function nextQuestion() {
     currentIdx++;
     renderQuestion();
@@ -370,6 +372,7 @@
     }
   }
 
+  // 🛠️ [기능 보완] 채점이 완료되는 시점에 이전/제출 버튼 상태를 안전하게 초기화
   function submitAnswer() {
     const q = interviewQuestions[currentIdx].question;
     const ans = document.getElementById('student-answer').value;
@@ -393,6 +396,9 @@
 
       document.getElementById('feedback-container').style.display = 'block';
       setStatus('평가 완료', false);
+      
+      // 채점 즉시 스크롤을 피드백 화면으로 매끄럽게 이동
+      document.getElementById('feedback-container').scrollIntoView({ behavior: 'smooth' });
     })
     .catch(err => { alert("평가 에러"); document.getElementById('btn-submit').disabled = false; });
   }
