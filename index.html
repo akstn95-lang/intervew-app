@@ -54,7 +54,7 @@
 <div class="app-container">
   <header>
     <h1>🎯 AI 모바일 모의 면접관</h1>
-    <p>실시간 데이터 동적 매핑 활성화 버전</p>
+    <p>안드로이드 오디오 락 강제 우회 적용 패치</p>
   </header>
 
   <div class="content">
@@ -112,7 +112,7 @@
 
 <script>
   // 🚨 [필수 확인] 본인의 구글 웹 앱 URL 주소를 여기에 넣어주세요.
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyxSBJFHOJTCXwM1hT2qb2iBe4yvzVEYZcvjmY-nKOIClrCzueY9BjQbONnYdrjM-gRpA/exec"; 
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwqgSrmi4oQrA7_-sBgG4CNfrtgk145UQUA9Rp1YhU5Gvsko5b7vw5wqkIEdfcJVTxUkA/exec"; 
 
   let interviewQuestions = [];
   let currentIdx = 0;
@@ -140,6 +140,7 @@
   function speak(text) {
     if (typeof speechSynthesis === 'undefined') return;
     speechSynthesis.cancel(); 
+    
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'ko-KR';
     const select = document.getElementById('voice-select');
@@ -207,14 +208,16 @@
       return;
     }
 
+    // 🛠️ [안드로이드 무음 차단 핵심 패치]
+    // 유저가 버튼을 누른 '0초' 시점에 즉시 가이드 보이스를 실행하여 
+    // 안드로이드 오디오 하드웨어 채널을 강제로 개방(Unlock)합니다.
     if (typeof speechSynthesis !== 'undefined') {
-      speechSynthesis.speak(new SpeechSynthesisUtterance("")); 
+      speak("입력된 데이터를 기반으로 면접 문항을 생성 중입니다. 잠시만 기다려 주세요.");
     }
     
     const intensity = document.getElementById('interview-type').value;
     setStatus('AI 문항 생성 중...', false);
     
-    // 💡 [실시간 연동] 작성된 생기부 데이터를 백엔드로 토스
     fetch(GAS_WEB_APP_URL, {
       method: "POST",
       body: JSON.stringify({ action: "generateQuestions", rawData: rawData, intensity: intensity })
@@ -246,7 +249,8 @@
     document.getElementById('current-question').innerHTML = `<strong>[Q${q.question_number}. ${q.type}]</strong><br>${q.question}`;
     setStatus(`진행 중 (${currentIdx + 1} / ${interviewQuestions.length})`, false);
     
-    setTimeout(() => { speak(q.question); }, 400);
+    // 이미 채널이 열려있으므로 비동기 데이터도 정상 출력됩니다.
+    speak(q.question);
   }
 
   function speakCurrentQuestion() {
