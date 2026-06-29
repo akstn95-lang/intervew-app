@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AI 모바일 모의 면접관 v1.0</title>
+  <title>AI 모바일 모의 면접관 v1.1</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -36,8 +36,6 @@
     .question-box { background: #eff6ff; border-radius: 12px; padding: 16px; font-size: 1rem; font-weight: 600; line-height: 1.6; color: #1e40af; margin-bottom: 12px; border: 1px solid #bfdbfe; }
     .status-badge { font-size: 0.85rem; font-weight: 600; color: #475569; background: #e2e8f0; padding: 8px 12px; border-radius: 20px; display: inline-block; margin-bottom: 12px; text-align: center; width: 100%; box-sizing: border-box; }
     .recording { background: #fee2e2; color: #dc2626; animation: pulse 1.5s infinite; }
-    
-    /* 하단 멀티 컨트롤바 레이아웃 */
     .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid #e2e8f0; padding: 12px 16px calc(12px + var(--safe-bottom)); max-width: 480px; margin: 0 auto; box-shadow: 0 -4px 10px rgba(0,0,0,0.03); z-index: 999; }
     .btn-row { display: flex; gap: 8px; margin-bottom: 8px; }
     .btn { flex: 1; border: none; padding: 12px; border-radius: 12px; font-size: 0.95rem; font-weight: 700; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; }
@@ -55,8 +53,8 @@
 
 <div class="app-container">
   <header>
-    <h1>🎯 AI 모의 면접관 <span style="font-size:0.8rem; vertical-align:middle; background:#2563eb; color:#fff; padding:2px 6px; border-radius:4px;">v1.0</span></h1>
-    <p>데이터 보존 및 이메일 리포트 연동 시스템</p>
+    <h1>🎯 AI 모의 면접관 <span style="font-size:0.8rem; vertical-align:middle; background:#2563eb; color:#fff; padding:2px 6px; border-radius:4px;">v1.1</span></h1>
+    <p>한국어 강제 고정 및 문항 선택 확장 버전</p>
   </header>
 
   <div class="content">
@@ -66,7 +64,7 @@
         <input type="email" id="user-email" class="input-text" placeholder="결과를 전송받을 이메일 주소 입력">
         
         <h2>학생부/성적 분석 데이터 입력</h2>
-        <textarea id="analysis-data" placeholder="학생 데이터를 붙여넣으세요..."></textarea>
+        <textarea id="analysis-data" placeholder="상담 학생의 내신 성적 추이, 선택 과목, 또는 생기부 세특 분석 텍스트 리포트를 자유롭게 붙여넣으세요..."></textarea>
         
         <div style="display:flex; gap:8px; margin-top:8px;">
           <button class="btn btn-secondary" style="background:#475569;" onclick="saveStorageData()">💾 데이터 저장</button>
@@ -80,9 +78,12 @@
         <select id="question-count" class="select-box">
           <option value="3">3문항 (미니 테스트)</option>
           <option value="5">5문항 (표준 면접)</option>
+          <option value="7">7문항 (심화 면접)</option>
+          <option value="10">10문항 (의약학/실전형 풀 세션)</option>
         </select>
 
-        <select id="voice-select" class="select-box"><option value="default">스마트폰 기본 시스템 음성</option></select>
+        <label style="font-size:0.85rem; font-weight:600; color:#475569;">발화 면접관 목소리</label>
+        <select id="voice-select" class="select-box"><option value="default">한국어 기본 시스템 음성</option></select>
         
         <div class="range-box">
           <label for="voice-rate">면접관 속도 (<span id="rate-val">0.95</span>x)</label>
@@ -100,7 +101,7 @@
     <div id="interview-panel" style="display:none;">
       <div id="status" class="status-badge">대기 중</div>
       <div class="question-box" id="current-question">질문을 구성하는 중입니다...</div>
-      <button class="btn btn-secondary" onclick="speakCurrentQuestion()" style="margin-bottom: 16px; padding: 10px; width:100%;">🔊 질문 다시 듣기</button>
+      <button id="btn-speak" class="btn btn-secondary" onclick="speakCurrentQuestion()" style="margin-bottom: 16px; padding: 10px; width:100%;">🔊 질문 다시 듣기</button>
 
       <div class="card" style="padding:12px; background:#f8fafc;">
         <h2>내 답변 내용 (일괄 변환)</h2>
@@ -136,8 +137,8 @@
 </div>
 
 <script>
-  // 🚨 본인의 구글 웹 앱 URL 주소를 여기에 넣어주세요.
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby1Bs14WRPr7EW-pDUkRDOaePbNHPn-3UaDo1QcuKEA0iJlky4yhRN88VaTwVpmgU-zwg/exec"; 
+  // 🚨 본인의 구글 웹 앱 URL 주소를 여기에 꼭 업데이트 해 주셔야 합니다!
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwi4umqojUG7Tkk-URR1sotqRWn1plskv3UydrriF_L6Bcx4L3f42mp04-0CC3ZMWZWDQ/exec"; 
 
   let interviewQuestions = [];
   let currentIdx = 0;
@@ -145,11 +146,8 @@
   let isRecording = false;
   let voices = [];
   let finalSpeechResult = ""; 
-  
-  // 최종 전송용 세션 히스토리 저장 버퍼
   let interviewHistory = [];
 
-  // 1. [기능 1] 로컬 스토리지 데이터 관리
   window.addEventListener('DOMContentLoaded', () => {
     const savedData = localStorage.getItem('interview_raw_data');
     const savedEmail = localStorage.getItem('interview_user_email');
@@ -164,7 +162,7 @@
     const email = document.getElementById('user-email').value;
     localStorage.setItem('interview_raw_data', data);
     localStorage.setItem('interview_user_email', email);
-    alert("💾 데이터가 스마트폰 브라우저에 영구 저장되었습니다. 창을 닫아도 보존됩니다.");
+    alert("💾 데이터가 스마트폰 브라우저에 영구 저장되었습니다.");
   }
 
   function clearStorageData() {
@@ -175,25 +173,41 @@
     }
   }
 
+  // 🛠️ [오류 수정 1] 인도어 등 외래어 혼선 버그 원천 차단 필터
   function populateVoices() {
     if (typeof speechSynthesis === 'undefined') return;
-    voices = speechSynthesis.getVoices().filter(v => v.lang.includes('ko') || v.lang.includes('KO'));
+    
+    // 한국어 언어코드(ko, ko-KR, KO)만 완벽하게 걸러내어 격리 조치
+    voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('ko') || v.lang.startsWith('KO'));
+    
     const select = document.getElementById('voice-select');
     if (voices.length > 0) {
       select.innerHTML = voices.map((v, i) => `<option value="${i}">${v.name}</option>`).join('');
+    } else {
+      select.innerHTML = '<option value="default">한국어 기본 시스템 음성</option>';
     }
   }
   if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
     speechSynthesis.onvoiceschanged = populateVoices;
   }
 
+  // 🛠️ [오류 수정 2] 스마트폰 강제 한국어 출력 파이프 고정
   function speak(text) {
     if (typeof speechSynthesis === 'undefined') return;
     speechSynthesis.cancel(); 
+    
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'ko-KR';
+    
+    // 브라우저 내부 하드웨어의 타겟 주소를 한국어로 강제 픽스
+    utterance.lang = 'ko-KR'; 
+    
     const select = document.getElementById('voice-select');
-    if (voices[select.value]) utterance.voice = voices[select.value];
+    if (voices[select.value]) {
+      utterance.voice = voices[select.value];
+    } else if (voices.length > 0) {
+      utterance.voice = voices[0]; // 셀렉트박스 꼬임 방지용 예비 락
+    }
+    
     utterance.rate = parseFloat(document.getElementById('voice-rate').value); 
     speechSynthesis.speak(utterance);
   }
@@ -268,17 +282,16 @@
     .then(data => {
       interviewQuestions = data;
       currentIdx = 0;
-      interviewHistory = []; // 히스토리 리셋
+      interviewHistory = []; 
       document.getElementById('setup-area').style.display = 'none';
       document.getElementById('interview-panel').style.display = 'block';
       document.getElementById('control-bar').style.display = 'flex';
       renderQuestion();
     })
-    .catch(err => { alert("통신 오류가 발생했습니다."); });
+    .catch(err => { alert("통신 오류가 발생했습니다. 구글 배포 상태를 재점검하세요."); });
   }
 
   function renderQuestion() {
-    // 💡 모든 문항을 돌았을 때의 처리부
     if (currentIdx >= interviewQuestions.length) {
       setStatus('🎯 모든 면접 종료 - 리포트 대기', false);
       document.getElementById('current-question').style.display = 'none';
@@ -296,7 +309,6 @@
     document.getElementById('btn-submit').disabled = true;
     finalSpeechResult = ""; 
     
-    // [기능 3] 첫 문항일 때는 이전 문항으로 복귀 방지 가드 처리
     document.getElementById('btn-prev').disabled = (currentIdx === 0);
     
     const q = interviewQuestions[currentIdx];
@@ -310,16 +322,14 @@
     if(interviewQuestions[currentIdx]) speak(interviewQuestions[currentIdx].question);
   }
 
-  // [기능 3] 이전 문항으로 돌아가기 (데이터 복구/롤백)
   function prevQuestion() {
     if (currentIdx > 0) {
       currentIdx--;
-      interviewHistory.pop(); // 마지막 히스토리 데이터 삭제
+      interviewHistory.pop(); 
       renderQuestion();
     }
   }
 
-  // [기능 4] 답변이 어려운 문항 무조건 패스(통과)
   function passQuestion() {
     if (confirm("이 문항을 답변 없이 통과하고 다음 단계로 진행할까요?")) {
       const q = interviewQuestions[currentIdx];
@@ -368,7 +378,6 @@
       document.getElementById('fb-good').innerText = fb.good_point;
       document.getElementById('fb-bad').innerText = fb.bad_point;
       
-      // 세션 세부 리포트 객체 누적 기록
       interviewHistory.push({
         type: interviewQuestions[currentIdx].type, question: q, answer: ans,
         score: fb.total_score, good: fb.good_point, bad: fb.bad_point
@@ -380,12 +389,6 @@
     .catch(err => { alert("평가 에러"); document.getElementById('btn-submit').disabled = false; });
   }
 
-  function nextQuestion() {
-    currentIdx++;
-    renderQuestion();
-  }
-
-  // [기능 5] 모든 세션 종료 후 이메일 전송 및 대기실 자동 퇴장
   function sendFinalEmailReport() {
     const email = document.getElementById('user-email').value.trim();
     setStatus('📬 메일 서버로 리포트 전송 중...', false);
@@ -397,8 +400,6 @@
     .then(res => res.json())
     .then(data => {
       alert("🚀 이메일 결과 리포트 전송 성공! 대기실로 이동합니다.");
-      
-      // 상태 초기화 및 대기실 UI 복귀
       document.getElementById('interview-panel').style.display = 'none';
       document.getElementById('control-bar').style.display = 'none';
       document.getElementById('setup-area').style.display = 'block';
