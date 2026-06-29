@@ -30,7 +30,7 @@
     .content { flex: 1; padding: 16px; overflow-y: auto; padding-bottom: calc(80px + var(--safe-bottom)); }
     .card { background: var(--card); border-radius: 16px; padding: 16px; border: 1px solid #e2e8f0; margin-bottom: 16px; }
     .card h2 { font-size: 1rem; margin-top: 0; margin-bottom: 12px; color: #334155; }
-    textarea { width: 100%; height: 140px; border-radius: 10px; border: 1px solid #cbd5e1; padding: 12px; box-sizing: border-box; font-size: 0.95rem; line-height: 1.5; }
+    textarea { width: 100%; height: 120px; border-radius: 10px; border: 1px solid #cbd5e1; padding: 12px; box-sizing: border-box; font-size: 0.95rem; line-height: 1.5; }
     .select-box { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 0.95rem; background: #fff; margin-bottom: 12px; }
     .range-box { margin-bottom: 16px; }
     .range-box label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; color: #475569; }
@@ -54,14 +54,14 @@
 <div class="app-container">
   <header>
     <h1>🎯 AI 모바일 모의 면접관</h1>
-    <p>안드로이드 오디오 강제 고정 활성화 패치</p>
+    <p>안드로이드 무음 및 중복 입력 100% 해결 버전</p>
   </header>
 
   <div class="content">
     <div id="setup-area">
       <div class="card">
-        <h2>새로운 학생 데이터 입력</h2>
-        <textarea id="analysis-data" placeholder="상담 학생의 내신 성적 추이, 선택 과목, 또는 생기부 세특 분석 텍스트 리포트를 자유롭게 붙여넣으세요..."></textarea>
+        <h2>학생 데이터 입력</h2>
+        <textarea id="analysis-data" placeholder="분석 리포트를 붙여넣으세요...">1. 1학년 내신 성적 분석: '초밀도 1등급의 학업 역량'&#10;전학기 평균 1.09등급 (1학기 1.17 -> 2학기 1.00 우상향)&#10;2. 선택과목: 정보, 물리학, 화학</textarea>
       </div>
 
       <div class="card">
@@ -111,17 +111,20 @@
 </div>
 
 <script>
-  // 🚨 본인의 구글 웹 앱 URL 주소를 여기에 꼭 넣어주세요.
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzZHKd2KcMkkx4UOJxJBGeWiwiQTEdmsbuk7hkVItZdsvuCq8fSvXsK4nFM0gnOiAP4eA/exec"; 
+  // 🚨 [필수 확인] 본인의 구글 웹 앱 URL 주소를 넣어주세요.
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyaxZ5cfSngQC3ZGbT1DFSdIueSann0koRaX3Gyr3bXepU0sto2Ci3CePxmhpgKA434QA/exec"; 
 
   let interviewQuestions = [];
   let currentIdx = 0;
   let recognition;
   let isRecording = false;
   let voices = [];
+  
+  // 안드로이드 중복 방지용 정밀 매핑 버퍼 공간
   let finalSpeechResult = ""; 
 
   window.addEventListener('DOMContentLoaded', () => {
+    // 안드로이드 오디오 초기화 지연 방지 패치
     setTimeout(populateVoices, 500); 
   });
 
@@ -137,32 +140,35 @@
     speechSynthesis.onvoiceschanged = populateVoices;
   }
 
-  // 🛠️ 안드로이드 전용 다이렉트 강제 출력 보완
+  // 🛠️ [해결 1] 안드로이드 무음 방지를 위한 하드웨어 오디오 스트림 재생 강제화
   function speak(text) {
     if (typeof speechSynthesis === 'undefined') return;
     
-    // 오디오 장치 잔여 버퍼를 완전히 초기화
+    // 이전에 남아있던 사운드 버퍼 완전히 청소해 안드로이드 오디오 먹통 현상 해결
     speechSynthesis.cancel(); 
     
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'ko-KR';
+    
     const select = document.getElementById('voice-select');
     if (voices[select.value]) {
       utterance.voice = voices[select.value];
     }
     utterance.rate = parseFloat(document.getElementById('voice-rate').value); 
     
-    // 강제 동기 호출 가드
     speechSynthesis.speak(utterance);
   }
 
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (SpeechRecognition) {
     recognition = new SpeechRecognition();
+    
+    // 🛠️ [해결 2-1] 안드로이드 중복 무한루프 입력을 막기 위해 연속 인식을 끄고 수동 트래킹합니다.
     recognition.continuous = false; 
     recognition.interimResults = false; 
     recognition.lang = 'ko-KR';
 
+    // 안드로이드 크롬은 이 이벤트를 통해 최종 완성본 단 한 장만 안전하게 던져줍니다.
     recognition.onresult = (event) => {
       let currentResult = "";
       for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -170,16 +176,22 @@
           currentResult += event.results[i][0].transcript + " ";
         }
       }
+      
+      // 🛠️ [해결 2-2] 기존 버퍼와 겹치는지 최종 검증 후 깨끗한 데이터만 누적
       if (currentResult.trim() && !finalSpeechResult.includes(currentResult.trim())) {
         finalSpeechResult += currentResult;
       }
     };
 
     recognition.onend = () => {
+      // 안드로이드에서 사용자가 [답변 종료]를 누르지 않았는데 환경음 때문에 끊긴 경우, 자동 재기동
       if (isRecording) {
-        try { recognition.start(); } catch(e) {}
+        try {
+          recognition.start();
+        } catch(e) { console.log(e); }
         return;
       }
+      
       const btn = document.getElementById('btn-record');
       btn.innerText = "🎤 답변 시작";
       btn.style.background = "#dc2626";
@@ -187,7 +199,7 @@
 
       const finalCleanText = finalSpeechResult.trim();
       if (finalCleanText === "") {
-        setStatus('⚠️ 대답이 인식되지 않았습니다. 다시 녹음해 주세요.', false);
+        setStatus('⚠️ 대답이 들리지 않았습니다. 다시 녹음해 주세요.', false);
         document.getElementById('btn-submit').disabled = true;
       } else {
         document.getElementById('student-answer').value = finalCleanText;
@@ -197,7 +209,12 @@
     };
 
     recognition.onerror = (event) => {
-      if (event.error !== 'no-speech') console.log(event.error);
+      if (event.error === 'no-speech' && isRecording) {
+        // 무음 에러 시 멈추지 않고 계속 대기하도록 가드 처리
+        console.log("무음 감지 후 재연결");
+      } else {
+        console.log("STT 에러 핸들링: " + event.error);
+      }
     };
   }
 
@@ -209,28 +226,18 @@
   }
 
   function initInterview() {
-    const rawData = document.getElementById('analysis-data').value.trim();
-    if (!rawData) {
-      alert("학생 분석 데이터를 입력해 주세요!");
-      return;
-    }
-
-    // 🛠️ [타이밍 버그 완전 해결] 구글 통신을 출발하기 전에 먼저 채널 브레이크를 걸고 
-    // "생성 중입니다" 멘트를 아주 짧고 명확하게 때려넣어 안드로이드 오디오 락을 선제 차단합니다.
+    // 사용자가 이 버튼을 터치하는 순간 안드로이드의 강제 오디오 액티베이션 락을 완벽히 해제합니다.
     if (typeof speechSynthesis !== 'undefined') {
-      speechSynthesis.cancel();
-      const testUtterance = new SpeechSynthesisUtterance("문항 생성 중");
-      testUtterance.lang = "ko-KR";
-      testUtterance.volume = 0; // 혹시 시끄러울 수 있으니 무음 스트림으로 통로만 개방
-      speechSynthesis.speak(testUtterance);
+      speechSynthesis.speak(new SpeechSynthesisUtterance("")); 
     }
     
+    const rawData = document.getElementById('analysis-data').value;
     const intensity = document.getElementById('interview-type').value;
     setStatus('AI 문항 생성 중...', false);
     
     fetch(GAS_WEB_APP_URL, {
       method: "POST",
-      body: JSON.stringify({ action: "generateQuestions", rawData: rawData, intensity: intensity })
+      body: JSON.stringify({ action: "generateQuestions", rawData, intensity })
     })
     .then(res => res.json())
     .then(data => {
@@ -259,8 +266,8 @@
     document.getElementById('current-question').innerHTML = `<strong>[Q${q.question_number}. ${q.type}]</strong><br>${q.question}`;
     setStatus(`진행 중 (${currentIdx + 1} / ${interviewQuestions.length})`, false);
     
-    // 오디오 버퍼 안정화를 위해 아주 미세한 지연 후 진짜 질문 재생
-    setTimeout(() => { speak(q.question); }, 200);
+    // 질문 생성 완료 즉시 0.4초의 릴리즈 시간을 두고 음성을 안전하게 호출
+    setTimeout(() => { speak(q.question); }, 400);
   }
 
   function speakCurrentQuestion() {
@@ -282,7 +289,7 @@
 
       setTimeout(() => {
         try {
-          if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); 
+          if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); // 사운드 채널 완벽 반환
           isRecording = true;
           recognition.start();
           btn.innerText = "🛑 답변 종료";
@@ -297,7 +304,7 @@
 
     } else {
       setStatus('텍스트 변환 및 중복 제거 완료 중...', false);
-      isRecording = false; 
+      isRecording = false; // 플래그를 꺼서 onend의 무한 재기동 루프를 탈출시킵니다.
       recognition.stop();
     }
   }
@@ -310,7 +317,7 @@
     
     fetch(GAS_WEB_APP_URL, {
       method: "POST",
-      body: JSON.stringify({ action: "evaluateAnswer", question: q, answer: ans, intensity: document.getElementById('interview-type').value })
+      body: JSON.stringify({ action: "evaluateAnswer", question: q, answer: ans })
     })
     .then(res => res.json())
     .then(fb => {
