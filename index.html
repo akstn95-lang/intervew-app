@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AI 모바일 모의 면접관 v1.1</title>
+  <title>AI 모바일 모의 면접관 v1.3</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -44,7 +44,7 @@
     .btn-success { background: #16a34a; }
     .btn-secondary { background: #64748b; }
     .btn-warning { background: #ea580c; }
-    .btn:disabled { background: #cbd5e1; color: #94a3b8; }
+    .btn:disabled { background: #cbd5e1; color: #94a3b8; !important; }
     .feedback-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; padding: 16px; margin-top: 16px; }
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
   </style>
@@ -53,8 +53,8 @@
 
 <div class="app-container">
   <header>
-    <h1>🎯 AI 모의 면접관 <span style="font-size:0.8rem; vertical-align:middle; background:#2563eb; color:#fff; padding:2px 6px; border-radius:4px;">v1.1</span></h1>
-    <p>표준 160대입 기출 데이터셋 연동 버전</p>
+    <h1>🎯 AI 모의 면접관 <span style="font-size:0.8rem; vertical-align:middle; background:#2563eb; color:#fff; padding:2px 6px; border-radius:4px;">v1.3</span></h1>
+    <p>이전 문항 활성화 가드 및 오디오 안정화 통합 패치</p>
   </header>
 
   <div class="content">
@@ -137,8 +137,8 @@
 </div>
 
 <script>
-  // 🚨 [필수 업데이트] 본인의 구글 웹 앱 URL 주소를 이곳에 꼭 넣어주세요!
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyVmZAtlqNbTAOJ5IvU_xVaTdVscEZ9p3Bylv5oeSyJTgssF_d7IfaAX0ahvH6xBjcpog/exec"; 
+  // 🚨 [필수 확인] 본인의 구글 웹 앱 URL 주소를 여기에 넣어주세요!
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwRSYrjWggPVAD0C9ue-quxsLbREGxYLr6bgzeKe7d-QuOwKDpjtrVQRmeNbVYzP0-zgw/exec"; 
 
   let interviewQuestions = [];
   let currentIdx = 0;
@@ -154,7 +154,11 @@
     if (savedData) document.getElementById('analysis-data').value = savedData;
     if (savedEmail) document.getElementById('user-email').value = savedEmail;
     
-    setTimeout(populateVoices, 500); 
+    populateVoices();
+    if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = populateVoices;
+    }
+    setInterval(populateVoices, 1000);
   });
 
   function saveStorageData() {
@@ -175,17 +179,17 @@
 
   function populateVoices() {
     if (typeof speechSynthesis === 'undefined') return;
-    voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('ko') || v.lang.startsWith('KO'));
+    const filtered = speechSynthesis.getVoices().filter(v => v.lang.startsWith('ko') || v.lang.startsWith('KO') || v.lang === 'ko_KR');
     
-    const select = document.getElementById('voice-select');
-    if (voices.length > 0) {
-      select.innerHTML = voices.map((v, i) => `<option value="${i}">${v.name}</option>`).join('');
-    } else {
-      select.innerHTML = '<option value="default">한국어 기본 시스템 음성</option>';
+    if (filtered.length !== voices.length) {
+      voices = filtered;
+      const select = document.getElementById('voice-select');
+      if (voices.length > 0) {
+        select.innerHTML = voices.map((v, i) => `<option value="${i}">${v.name}</option>`).join('');
+      } else {
+        select.innerHTML = '<option value="default">한국어 기본 시스템 음성</option>';
+      }
     }
-  }
-  if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
-    speechSynthesis.onvoiceschanged = populateVoices;
   }
 
   function speak(text) {
@@ -260,7 +264,7 @@
 
     if (typeof speechSynthesis !== 'undefined') {
       speechSynthesis.cancel();
-      const testUtterance = new SpeechSynthesisUtterance("문항 생성 중");
+      const testUtterance = new SpeechSynthesisUtterance("시동");
       testUtterance.lang = "ko-KR"; testUtterance.volume = 0;
       speechSynthesis.speak(testUtterance);
     }
@@ -282,7 +286,7 @@
       document.getElementById('control-bar').style.display = 'flex';
       renderQuestion();
     })
-    .catch(err => { alert("통신 오류가 발생했습니다. 구글 서버 배포 설정을 확인하세요."); });
+    .catch(err => { alert("통신 오류가 발생했습니다. 구글 서버 배포 상태를 다시 확인하세요."); });
   }
 
   function renderQuestion() {
@@ -303,7 +307,12 @@
     document.getElementById('btn-submit').disabled = true;
     finalSpeechResult = ""; 
     
-    document.getElementById('btn-prev').disabled = (currentIdx === 0);
+    // 🛠️ [이전 문항 버튼 오류 수정] 조건문을 더욱 엄격하게 제어하여 완벽 활성화
+    if (currentIdx === 0) {
+      document.getElementById('btn-prev').disabled = true;
+    } else {
+      document.getElementById('btn-prev').disabled = false;
+    }
     
     const q = interviewQuestions[currentIdx];
     document.getElementById('current-question').innerHTML = `<strong>[Q${q.question_number}. ${q.type}]</strong><br>${q.question}`;
@@ -314,6 +323,11 @@
 
   function speakCurrentQuestion() {
     if(interviewQuestions[currentIdx]) speak(interviewQuestions[currentIdx].question);
+  }
+
+  function nextQuestion() {
+    currentIdx++;
+    renderQuestion();
   }
 
   function prevQuestion() {
