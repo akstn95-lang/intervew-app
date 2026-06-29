@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AI 모바일 모의 면접관</title>
+  <title>AI 모바일 모의 면접관 v1.0</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -14,9 +14,7 @@
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      margin: 0; padding: 0;
+      background-color: var(--bg); color: var(--text); margin: 0; padding: 0;
       -webkit-tap-highlight-color: transparent;
     }
     .app-container {
@@ -27,23 +25,27 @@
     header { background: #ffffff; padding: 16px; border-bottom: 1px solid #e2e8f0; text-align: center; }
     header h1 { font-size: 1.25rem; margin: 0; font-weight: 700; color: #1e3a8a; }
     header p { font-size: 0.8rem; margin: 4px 0 0 0; color: #64748b; }
-    .content { flex: 1; padding: 16px; overflow-y: auto; padding-bottom: calc(80px + var(--safe-bottom)); }
+    .content { flex: 1; padding: 16px; overflow-y: auto; padding-bottom: calc(140px + var(--safe-bottom)); }
     .card { background: var(--card); border-radius: 16px; padding: 16px; border: 1px solid #e2e8f0; margin-bottom: 16px; }
     .card h2 { font-size: 1rem; margin-top: 0; margin-bottom: 12px; color: #334155; }
-    textarea { width: 100%; height: 140px; border-radius: 10px; border: 1px solid #cbd5e1; padding: 12px; box-sizing: border-box; font-size: 0.95rem; line-height: 1.5; }
-    .select-box { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 0.95rem; background: #fff; margin-bottom: 12px; }
+    textarea { width: 100%; height: 120px; border-radius: 10px; border: 1px solid #cbd5e1; padding: 12px; box-sizing: border-box; font-size: 0.95rem; line-height: 1.5; }
+    .select-box, .input-text { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 0.95rem; background: #fff; margin-bottom: 12px; box-sizing: border-box; }
     .range-box { margin-bottom: 16px; }
     .range-box label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; color: #475569; }
     input[type="range"] { width: 100%; accent-color: var(--primary); }
     .question-box { background: #eff6ff; border-radius: 12px; padding: 16px; font-size: 1rem; font-weight: 600; line-height: 1.6; color: #1e40af; margin-bottom: 12px; border: 1px solid #bfdbfe; }
     .status-badge { font-size: 0.85rem; font-weight: 600; color: #475569; background: #e2e8f0; padding: 8px 12px; border-radius: 20px; display: inline-block; margin-bottom: 12px; text-align: center; width: 100%; box-sizing: border-box; }
     .recording { background: #fee2e2; color: #dc2626; animation: pulse 1.5s infinite; }
-    .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid #e2e8f0; padding: 12px 16px calc(12px + var(--safe-bottom)); display: flex; gap: 10px; max-width: 480px; margin: 0 auto; box-shadow: 0 -4px 10px rgba(0,0,0,0.03); z-index: 999; }
-    .btn { flex: 1; border: none; padding: 14px; border-radius: 12px; font-size: 1rem; font-weight: 700; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    
+    /* 하단 멀티 컨트롤바 레이아웃 */
+    .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #ffffff; border-top: 1px solid #e2e8f0; padding: 12px 16px calc(12px + var(--safe-bottom)); max-width: 480px; margin: 0 auto; box-shadow: 0 -4px 10px rgba(0,0,0,0.03); z-index: 999; }
+    .btn-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .btn { flex: 1; border: none; padding: 12px; border-radius: 12px; font-size: 0.95rem; font-weight: 700; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; }
     .btn-primary { background: var(--primary); }
     .btn-danger { background: #dc2626; }
     .btn-success { background: #16a34a; }
     .btn-secondary { background: #64748b; }
+    .btn-warning { background: #ea580c; }
     .btn:disabled { background: #cbd5e1; color: #94a3b8; }
     .feedback-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; padding: 16px; margin-top: 16px; }
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
@@ -53,23 +55,37 @@
 
 <div class="app-container">
   <header>
-    <h1>🎯 AI 모바일 모의 면접관</h1>
-    <p>안드로이드 오디오 강제 고정 활성화 패치</p>
+    <h1>🎯 AI 모의 면접관 <span style="font-size:0.8rem; vertical-align:middle; background:#2563eb; color:#fff; padding:2px 6px; border-radius:4px;">v1.0</span></h1>
+    <p>데이터 보존 및 이메일 리포트 연동 시스템</p>
   </header>
 
   <div class="content">
     <div id="setup-area">
       <div class="card">
-        <h2>새로운 학생 데이터 입력</h2>
-        <textarea id="analysis-data" placeholder="상담 학생의 내신 성적 추이, 선택 과목, 또는 생기부 세특 분석 텍스트 리포트를 자유롭게 붙여넣으세요..."></textarea>
+        <h2>행정 및 리포트 정보 입력</h2>
+        <input type="email" id="user-email" class="input-text" placeholder="결과를 전송받을 이메일 주소 입력">
+        
+        <h2>학생부/성적 분석 데이터 입력</h2>
+        <textarea id="analysis-data" placeholder="학생 데이터를 붙여넣으세요..."></textarea>
+        
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button class="btn btn-secondary" style="background:#475569;" onclick="saveStorageData()">💾 데이터 저장</button>
+          <button class="btn btn-secondary" style="background:#94a3b8;" onclick="clearStorageData()">🔄 새로 입력</button>
+        </div>
       </div>
 
       <div class="card">
-        <h2>면접관 환경 설정</h2>
+        <h2>면접 알고리즘 세부 설정</h2>
+        <label style="font-size:0.85rem; font-weight:600; color:#475569;">목표 면접 문항 개수 설정</label>
+        <select id="question-count" class="select-box">
+          <option value="3">3문항 (미니 테스트)</option>
+          <option value="5">5문항 (표준 면접)</option>
+        </select>
+
         <select id="voice-select" class="select-box"><option value="default">스마트폰 기본 시스템 음성</option></select>
         
         <div class="range-box">
-          <label for="voice-rate">면접관 말하기 속도 (<span id="rate-val">0.95</span>x)</label>
+          <label for="voice-rate">면접관 속도 (<span id="rate-val">0.95</span>x)</label>
           <input type="range" id="voice-rate" min="0.6" max="1.5" value="0.95" step="0.05" oninput="document.getElementById('rate-val').innerText=this.value">
         </div>
 
@@ -83,36 +99,45 @@
 
     <div id="interview-panel" style="display:none;">
       <div id="status" class="status-badge">대기 중</div>
-      <div class="question-box" id="current-question">질문을 생성 중입니다...</div>
-      <button class="btn btn-secondary" onclick="speakCurrentQuestion()" style="margin-bottom: 16px; padding: 10px;">🔊 질문 다시 듣기</button>
+      <div class="question-box" id="current-question">질문을 구성하는 중입니다...</div>
+      <button class="btn btn-secondary" onclick="speakCurrentQuestion()" style="margin-bottom: 16px; padding: 10px; width:100%;">🔊 질문 다시 듣기</button>
 
       <div class="card" style="padding:12px; background:#f8fafc;">
         <h2>내 답변 내용 (일괄 변환)</h2>
-        <textarea id="student-answer" placeholder="하단의 녹음 버튼을 누르고 대답하세요..." readonly style="background:#fff; height:100px; color:#1e293b;"></textarea>
+        <textarea id="student-answer" placeholder="하단의 녹음 시작 버튼을 누르세요..." readonly style="background:#fff; height:100px; color:#1e293b;"></textarea>
       </div>
 
       <div id="feedback-container" class="feedback-box" style="display:none;">
-        <h3 style="margin-top:0; color:#166534;">📊 AI 동적 평가 리포트</h3>
-        <p><strong>종합 평가 점수:</strong> <span id="fb-total" style="font-size:1.2rem; color:#15803d; font-weight:bold;">0</span>점</p>
-        <p><strong>👍 잘한 점:</strong> <span id="fb-good"></span></p>
-        <p><strong>⚠️ 아쉬운 점:</strong> <span id="fb-bad"></span></p>
-        <div style="background:#fff; padding:12px; border-radius:10px; border:1px solid #e2e8f0; margin-top:10px;">
-          <strong>💡 추천 모범 답안 가이드:</strong><br><span id="fb-improved" style="color:#334155;"></span>
-        </div>
-        <button class="btn btn-primary" onclick="nextQuestion()" style="margin-top:16px;">다음 문항 진행 ➡️</button>
+        <h3 style="margin-top:0; color:#166534;">📊 AI 단문 채점 결과</h3>
+        <p><strong>점수:</strong> <span id="fb-total" style="font-weight:bold; color:#166534;">0</span>점</p>
+        <p><strong>👍 우수함:</strong> <span id="fb-good"></span></p>
+        <p><strong>⚠️ 보완점:</strong> <span id="fb-bad"></span></p>
+        <button class="btn btn-primary" onclick="nextQuestion()" style="margin-top:16px;">다음 문항으로 이동 ➡️</button>
+      </div>
+
+      <div id="final-report-panel" class="card" style="display:none; text-align:center; background:#f0fdf4; border:1px solid #bbf7d0;">
+        <h2 style="color:#166534; margin-bottom:6px;">🎉 모의 면접 세션 종료</h2>
+        <p style="font-size:0.9rem; margin-top:0;">모든 질문에 대한 답변과 채점이 끝났습니다.</p>
+        <button class="btn btn-success" style="width:100%; padding:14px;" onclick="sendFinalEmailReport()">🚀 이메일 결과 리포트 전송</button>
       </div>
     </div>
   </div>
 
   <div class="bottom-bar" id="control-bar" style="display:none;">
-    <button id="btn-record" class="btn btn-danger" onclick="toggleRecording()">🎤 답변 시작</button>
-    <button id="btn-submit" class="btn btn-success" onclick="submitAnswer()" disabled>🚀 평가 요청</button>
+    <div class="btn-row">
+      <button id="btn-prev" class="btn btn-secondary" onclick="prevQuestion()">↩️ 이전 문항</button>
+      <button id="btn-pass" class="btn btn-warning" onclick="passQuestion()">⏭️ 문항 통과</button>
+    </div>
+    <div class="btn-row">
+      <button id="btn-record" class="btn btn-danger" onclick="toggleRecording()">🎤 답변 시작</button>
+      <button id="btn-submit" class="btn btn-success" onclick="submitAnswer()" disabled>🚀 답변 제출</button>
+    </div>
   </div>
 </div>
 
 <script>
-  // 🚨 본인의 구글 웹 앱 URL 주소를 여기에 꼭 넣어주세요.
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyQpQDim-dRL2VoGeyTgKZEY2khngOYOAqn6CvYpjg67rsTEQExMvG5KR5KVxGQXjWDhg/exec"; 
+  // 🚨 본인의 구글 웹 앱 URL 주소를 여기에 넣어주세요.
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby1Bs14WRPr7EW-pDUkRDOaePbNHPn-3UaDo1QcuKEA0iJlky4yhRN88VaTwVpmgU-zwg/exec"; 
 
   let interviewQuestions = [];
   let currentIdx = 0;
@@ -120,10 +145,35 @@
   let isRecording = false;
   let voices = [];
   let finalSpeechResult = ""; 
+  
+  // 최종 전송용 세션 히스토리 저장 버퍼
+  let interviewHistory = [];
 
+  // 1. [기능 1] 로컬 스토리지 데이터 관리
   window.addEventListener('DOMContentLoaded', () => {
+    const savedData = localStorage.getItem('interview_raw_data');
+    const savedEmail = localStorage.getItem('interview_user_email');
+    if (savedData) document.getElementById('analysis-data').value = savedData;
+    if (savedEmail) document.getElementById('user-email').value = savedEmail;
+    
     setTimeout(populateVoices, 500); 
   });
+
+  function saveStorageData() {
+    const data = document.getElementById('analysis-data').value;
+    const email = document.getElementById('user-email').value;
+    localStorage.setItem('interview_raw_data', data);
+    localStorage.setItem('interview_user_email', email);
+    alert("💾 데이터가 스마트폰 브라우저에 영구 저장되었습니다. 창을 닫아도 보존됩니다.");
+  }
+
+  function clearStorageData() {
+    if(confirm("기존 입력된 데이터를 완전히 초기화할까요?")) {
+      localStorage.removeItem('interview_raw_data');
+      document.getElementById('analysis-data').value = "";
+      alert("초기화되었습니다. 새로운 데이터를 입력하세요.");
+    }
+  }
 
   function populateVoices() {
     if (typeof speechSynthesis === 'undefined') return;
@@ -137,38 +187,26 @@
     speechSynthesis.onvoiceschanged = populateVoices;
   }
 
-  // 🛠️ 안드로이드 전용 다이렉트 강제 출력 보완
   function speak(text) {
     if (typeof speechSynthesis === 'undefined') return;
-    
-    // 오디오 장치 잔여 버퍼를 완전히 초기화
     speechSynthesis.cancel(); 
-    
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'ko-KR';
     const select = document.getElementById('voice-select');
-    if (voices[select.value]) {
-      utterance.voice = voices[select.value];
-    }
+    if (voices[select.value]) utterance.voice = voices[select.value];
     utterance.rate = parseFloat(document.getElementById('voice-rate').value); 
-    
-    // 강제 동기 호출 가드
     speechSynthesis.speak(utterance);
   }
 
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (SpeechRecognition) {
     recognition = new SpeechRecognition();
-    recognition.continuous = false; 
-    recognition.interimResults = false; 
-    recognition.lang = 'ko-KR';
+    recognition.continuous = false; recognition.interimResults = false; recognition.lang = 'ko-KR';
 
     recognition.onresult = (event) => {
       let currentResult = "";
       for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          currentResult += event.results[i][0].transcript + " ";
-        }
+        if (event.results[i].isFinal) currentResult += event.results[i][0].transcript + " ";
       }
       if (currentResult.trim() && !finalSpeechResult.includes(currentResult.trim())) {
         finalSpeechResult += currentResult;
@@ -181,8 +219,7 @@
         return;
       }
       const btn = document.getElementById('btn-record');
-      btn.innerText = "🎤 답변 시작";
-      btn.style.background = "#dc2626";
+      btn.innerText = "🎤 답변 시작"; btn.style.background = "#dc2626";
       document.getElementById('status').className = "status-badge";
 
       const finalCleanText = finalSpeechResult.trim();
@@ -195,10 +232,7 @@
         document.getElementById('btn-submit').disabled = false;
       }
     };
-
-    recognition.onerror = (event) => {
-      if (event.error !== 'no-speech') console.log(event.error);
-    };
+    recognition.onerror = (e) => { if (e.error !== 'no-speech') console.log(e.error); };
   }
 
   function setStatus(text, isError) {
@@ -210,18 +244,16 @@
 
   function initInterview() {
     const rawData = document.getElementById('analysis-data').value.trim();
-    if (!rawData) {
-      alert("학생 분석 데이터를 입력해 주세요!");
-      return;
-    }
+    const email = document.getElementById('user-email').value.trim();
+    const count = document.getElementById('question-count').value;
 
-    // 🛠️ [타이밍 버그 완전 해결] 구글 통신을 출발하기 전에 먼저 채널 브레이크를 걸고 
-    // "생성 중입니다" 멘트를 아주 짧고 명확하게 때려넣어 안드로이드 오디오 락을 선제 차단합니다.
+    if (!email) { alert("리포트를 전송받을 이메일을 입력하세요!"); return; }
+    if (!rawData) { alert("학생 분석 데이터를 입력하세요!"); return; }
+
     if (typeof speechSynthesis !== 'undefined') {
       speechSynthesis.cancel();
       const testUtterance = new SpeechSynthesisUtterance("문항 생성 중");
-      testUtterance.lang = "ko-KR";
-      testUtterance.volume = 0; // 혹시 시끄러울 수 있으니 무음 스트림으로 통로만 개방
+      testUtterance.lang = "ko-KR"; testUtterance.volume = 0;
       speechSynthesis.speak(testUtterance);
     }
     
@@ -230,36 +262,47 @@
     
     fetch(GAS_WEB_APP_URL, {
       method: "POST",
-      body: JSON.stringify({ action: "generateQuestions", rawData: rawData, intensity: intensity })
+      body: JSON.stringify({ action: "generateQuestions", rawData: rawData, intensity: intensity, count: count })
     })
     .then(res => res.json())
     .then(data => {
       interviewQuestions = data;
       currentIdx = 0;
+      interviewHistory = []; // 히스토리 리셋
       document.getElementById('setup-area').style.display = 'none';
       document.getElementById('interview-panel').style.display = 'block';
       document.getElementById('control-bar').style.display = 'flex';
       renderQuestion();
     })
-    .catch(err => { alert("통신 오류가 발생했습니다. 구글 배포 설정을 확인해 주세요."); });
+    .catch(err => { alert("통신 오류가 발생했습니다."); });
   }
 
   function renderQuestion() {
+    // 💡 모든 문항을 돌았을 때의 처리부
     if (currentIdx >= interviewQuestions.length) {
-      alert("🎉 모든 면접 문항이 끝났습니다. 고생하셨습니다!");
-      document.getElementById('control-bar').style.display = 'none';
+      setStatus('🎯 모든 면접 종료 - 리포트 대기', false);
+      document.getElementById('current-question').style.display = 'none';
+      document.getElementById('btn-speak').style.display = 'none';
+      document.getElementById('feedback-container').style.display = 'none';
+      document.getElementById('final-report-panel').style.display = 'block';
       return;
     }
+    
+    document.getElementById('current-question').style.display = 'block';
+    document.getElementById('btn-speak').style.display = 'block';
     document.getElementById('feedback-container').style.display = 'none';
+    document.getElementById('final-report-panel').style.display = 'none';
     document.getElementById('student-answer').value = '';
     document.getElementById('btn-submit').disabled = true;
     finalSpeechResult = ""; 
+    
+    // [기능 3] 첫 문항일 때는 이전 문항으로 복귀 방지 가드 처리
+    document.getElementById('btn-prev').disabled = (currentIdx === 0);
     
     const q = interviewQuestions[currentIdx];
     document.getElementById('current-question').innerHTML = `<strong>[Q${q.question_number}. ${q.type}]</strong><br>${q.question}`;
     setStatus(`진행 중 (${currentIdx + 1} / ${interviewQuestions.length})`, false);
     
-    // 오디오 버퍼 안정화를 위해 아주 미세한 지연 후 진짜 질문 재생
     setTimeout(() => { speak(q.question); }, 200);
   }
 
@@ -267,45 +310,52 @@
     if(interviewQuestions[currentIdx]) speak(interviewQuestions[currentIdx].question);
   }
 
+  // [기능 3] 이전 문항으로 돌아가기 (데이터 복구/롤백)
+  function prevQuestion() {
+    if (currentIdx > 0) {
+      currentIdx--;
+      interviewHistory.pop(); // 마지막 히스토리 데이터 삭제
+      renderQuestion();
+    }
+  }
+
+  // [기능 4] 답변이 어려운 문항 무조건 패스(통과)
+  function passQuestion() {
+    if (confirm("이 문항을 답변 없이 통과하고 다음 단계로 진행할까요?")) {
+      const q = interviewQuestions[currentIdx];
+      interviewHistory.push({
+        type: q.type, question: q.question, answer: "[학생 패스 - 답변 없음]",
+        score: 0, good: "해당 문항은 학생이 답변하지 않고 패스했습니다.", bad: "-"
+      });
+      currentIdx++;
+      renderQuestion();
+    }
+  }
+
   function toggleRecording() {
     if (!recognition) return;
     const btn = document.getElementById('btn-record');
-    
     if (!isRecording) {
-      finalSpeechResult = ""; 
-      document.getElementById('student-answer').value = '';
-      document.getElementById('btn-submit').disabled = true;
-      
-      btn.innerText = "⏳ 시동 중...";
-      btn.style.background = "#64748b";
-      setStatus('🎙️ 마이크 연결 중...', false);
-
+      finalSpeechResult = ""; document.getElementById('student-answer').value = '';
+      btn.innerText = "⏳ 시동 중..."; btn.style.background = "#64748b";
       setTimeout(() => {
         try {
           if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); 
-          isRecording = true;
-          recognition.start();
-          btn.innerText = "🛑 답변 종료";
-          btn.style.background = "#475569";
+          isRecording = true; recognition.start();
+          btn.innerText = "🛑 답변 종료"; btn.style.background = "#475569";
           document.getElementById('status').className = "status-badge recording";
           setStatus('🎙️ 녹음 중... 질문에 대답해 주세요.', false);
-        } catch(e) { 
-          setStatus('⚠️ 다시 시도해 주세요', true);
-          isRecording = false;
-        }
+        } catch(e) { isRecording = false; }
       }, 300);
-
     } else {
-      setStatus('텍스트 변환 및 중복 제거 완료 중...', false);
-      isRecording = false; 
-      recognition.stop();
+      isRecording = false; recognition.stop();
     }
   }
 
   function submitAnswer() {
     const q = interviewQuestions[currentIdx].question;
     const ans = document.getElementById('student-answer').value;
-    setStatus('AI 채점관이 답변을 분석 중입니다...', false);
+    setStatus('AI 채점 분석 중...', false);
     document.getElementById('btn-submit').disabled = true;
     
     fetch(GAS_WEB_APP_URL, {
@@ -317,21 +367,43 @@
       document.getElementById('fb-total').innerText = fb.total_score;
       document.getElementById('fb-good').innerText = fb.good_point;
       document.getElementById('fb-bad').innerText = fb.bad_point;
-      document.getElementById('fb-improved').innerText = fb.improved_answer;
       
+      // 세션 세부 리포트 객체 누적 기록
+      interviewHistory.push({
+        type: interviewQuestions[currentIdx].type, question: q, answer: ans,
+        score: fb.total_score, good: fb.good_point, bad: fb.bad_point
+      });
+
       document.getElementById('feedback-container').style.display = 'block';
       setStatus('평가 완료', false);
-      document.getElementById('feedback-container').scrollIntoView({ behavior: 'smooth' });
     })
-    .catch(err => {
-      alert("평가 통신 에러가 발생했습니다.");
-      document.getElementById('btn-submit').disabled = false;
-    });
+    .catch(err => { alert("평가 에러"); document.getElementById('btn-submit').disabled = false; });
   }
 
   function nextQuestion() {
     currentIdx++;
     renderQuestion();
+  }
+
+  // [기능 5] 모든 세션 종료 후 이메일 전송 및 대기실 자동 퇴장
+  function sendFinalEmailReport() {
+    const email = document.getElementById('user-email').value.trim();
+    setStatus('📬 메일 서버로 리포트 전송 중...', false);
+    
+    fetch(GAS_WEB_APP_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "sendEmailReport", email: email, history: interviewHistory })
+    })
+    .then(res => res.json())
+    .then(data => {
+      alert("🚀 이메일 결과 리포트 전송 성공! 대기실로 이동합니다.");
+      
+      // 상태 초기화 및 대기실 UI 복귀
+      document.getElementById('interview-panel').style.display = 'none';
+      document.getElementById('control-bar').style.display = 'none';
+      document.getElementById('setup-area').style.display = 'block';
+    })
+    .catch(err => { alert("메일 발송 통신 실패"); });
   }
 </script>
 </body>
