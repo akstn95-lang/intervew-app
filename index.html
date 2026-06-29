@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI 모바일 모의 면접관</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .app-container {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      box-shadow: 0 0 20px rgba(0,0,0,0.05);
+    }
+    header {
+      background: #ffffff;
+      padding: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: center;
+    }
+    header h1 { font-size: 1.25rem; margin: 0; font-weight: 700; color: #1e3a8a; }
+    header p { font-size: 0.8rem; margin: 4px 0 0 0; color: #64748b; }
+    .content {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      padding-bottom: calc(80px + var(--safe-bottom));
+    }
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 16px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 16px;
+    }
+    .card h2 { font-size: 1rem; margin-top: 0; margin-bottom: 12px; color: #334155; }
+    textarea {
+      width: 100%;
+      height: 120px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      padding: 12px;
+      box-sizing: border-box;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .select-box {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      font-size: 0.95rem;
+      background: #fff;
+      margin-bottom: 12px;
+    }
+    .range-box {
+      margin-bottom: 16px;
+    }
+    .range-box label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #475569;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+    }
+    .question-box {
+      background: #eff6ff;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.6;
+      color: #1e40af;
+      margin-bottom: 12px;
+      border: 1px solid #bfdbfe;
+    }
+    .status-badge {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #475569;
+      background: #e2e8f0;
+      padding: 8px 12px;
+      border-radius: 20px;
+      display: inline-block;
+      margin-bottom: 12px;
+      text-align: center;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .recording { background: #fee2e2; color: #dc2626; animation: pulse 1.5s infinite; }
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border-top: 1px solid #e2e8f0;
+      padding: 12px 16px calc(12px + var(--safe-bottom));
+      display: flex;
+      gap: 10px;
+      max-width: 480px;
+      margin: 0 auto;
+      box-shadow: 0 -4px 10px rgba(0,0,0,0.03);
+      z-index: 999;
+    }
+    .btn {
+      flex: 1;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-primary { background: var(--primary); }
+    .btn-danger { background: #dc2626; }
+    .btn-success { background: #16a34a; }
+    .btn-secondary { background: #64748b; }
+    .btn:disabled { background: #cbd5e1; color: #94a3b8; }
+    .feedback-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <header>
+    <h1>🎯 AI 모바일 모의 면접관</h1>
+    <p>하드웨어 예열 딜레이 보정 및 속도바 복원</p>
+  </header>
+
+  <div class="content">
+    <div id="setup-area">
+      <div class="card">
+        <h2>학생 데이터 입력</h2>
+        <textarea id="analysis-data" placeholder="분석 리포트를 붙여넣으세요...">1. 1학년 내신 성적 분석: '초밀도 1등급의 학업 역량'&#10;전학기 평균 1.09등급 (1학기 1.17 -> 2학기 1.00 우상향)&#10;2. 선택과목: 정보, 물리학, 화학</textarea>
+      </div>
+
+      <div class="card">
+        <h2>면접관 환경 설정</h2>
+        <select id="voice-select" class="select-box"><option>음성 엔진 로드 중...</option></select>
+        
+        <div class="range-box">
+          <label for="voice-rate">면접관 말하기 속도 (<span id="rate-val">0.95</span>x)</label>
+          <input type="range" id="voice-rate" min="0.6" max="1.5" value="0.95" step="0.05" oninput="document.getElementById('rate-val').innerText=this.value">
+        </div>
+
+        <select id="interview-type" class="select-box">
+          <option value="soft">부드러운 확인 면접</option>
+          <option value="hard">날카로운 압박 면접</option>
+        </select>
+        <button class="btn btn-primary" onclick="initInterview()">모의 면접 개시</button>
+      </div>
+    </div>
+
+    <div id="interview-panel" style="display:none;">
+      <div id="status" class="status-badge">마이크 준비 중</div>
+      <div class="question-box" id="current-question">질문을 생성 중입니다...</div>
+      <button class="btn btn-secondary" onclick="speakCurrentQuestion()" style="margin-bottom: 16px; padding: 10px;">🔊 질문 다시 듣기</button>
+
+      <div class="card" style="padding:12px; background:#f8fafc;">
+        <h2>내 답변 내용 (일괄 변환)</h2>
+        <textarea id="student-answer" placeholder="하단의 녹음 버튼을 누르고 대답하세요..." readonly style="background:#fff; height:100px; color:#1e293b;"></textarea>
+      </div>
+
+      <div id="feedback-container" class="feedback-box" style="display:none;">
+        <h3 style="margin-top:0; color:#166534;">📊 AI 동적 평가 리포트</h3>
+        <p><strong>종합 평가 점수:</strong> <span id="fb-total" style="font-size:1.2rem; color:#15803d; font-weight:bold;">0</span>점</p>
+        <p><strong>👍 잘한 점:</strong> <span id="fb-good"></span></p>
+        <p><strong>⚠️ 아쉬운 점:</strong> <span id="fb-bad"></span></p>
+        <div style="background:#fff; padding:12px; border-radius:10px; border:1px solid #e2e8f0; margin-top:10px;">
+          <strong>💡 추천 모범 답안 가이드:</strong><br><span id="fb-improved" style="color:#334155;"></span>
+        </div>
+        <button class="btn btn-primary" onclick="nextQuestion()" style="margin-top:16px;">다음 문항 진행 ➡️</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-bar" id="control-bar" style="display:none;">
+    <button id="btn-record" class="btn btn-danger" onclick="toggleRecording()">🎤 답변 시작</button>
+    <button id="btn-submit" class="btn btn-success" onclick="submitAnswer()" disabled>🚀 평가 요청</button>
+  </div>
+</div>
+
+<script>
+  // 🚨 본인의 구글 웹 앱 URL 주소를 여기에 꼭 업데이트 하세요!
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwovViT7qRJdeI1M9Ute-VjMNrHMKWXTZIwyEGbriz6x9j7TJK46qWmNVe8TQSNBynL8A/exec"; 
+
+  let interviewQuestions = [];
+  let currentIdx = 0;
+  let recognition;
+  let isRecording = false;
+  let voices = [];
+  let speechTextBuffer = "";
+
+  window.addEventListener('DOMContentLoaded', async () => {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop());
+      } catch (err) { console.log("마이크 사전 권한 대기"); }
+    }
+    populateVoices();
+  });
+
+  function populateVoices() {
+    if (typeof speechSynthesis === 'undefined') return;
+    voices = speechSynthesis.getVoices().filter(v => v.lang.includes('ko') || v.lang.includes('KO'));
+    const select = document.getElementById('voice-select');
+    if(voices.length === 0) {
+      select.innerHTML = '<option value="0">기본 시스템 음성</option>';
+      return;
+    }
+    select.innerHTML = voices.map((v, i) => `<option value="${i}">${v.name}</option>`).join('');
+  }
+  if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = populateVoices;
+  }
+
+  function speak(text) {
+    if (speechSynthesis.speaking) speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const select = document.getElementById('voice-select');
+    if (voices[select.value]) utterance.voice = voices[select.value];
+    
+    // ⚙️ 실시간 슬라이더 바 값 반영
+    utterance.rate = parseFloat(document.getElementById('voice-rate').value); 
+    speechSynthesis.speak(utterance);
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'ko-KR';
+
+    recognition.onresult = (event) => {
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript + ' ';
+        }
+      }
+      if (finalTranscript) speechTextBuffer += finalTranscript;
+    };
+
+    recognition.onend = () => {
+      isRecording = false;
+      const btn = document.getElementById('btn-record');
+      btn.innerText = "🎤 답변 시작";
+      btn.style.background = "#dc2626";
+      document.getElementById('status').className = "status-badge";
+
+      const finalCleanText = speechTextBuffer.trim();
+      if (finalCleanText === "") {
+        setStatus('⚠️ 음성 인식 완료 (텍스트 내용 없음)', false);
+        document.getElementById('btn-submit').disabled = true;
+      } else {
+        document.getElementById('student-answer').value = finalCleanText;
+        setStatus('📱 답변 인식 완료', false);
+        document.getElementById('btn-submit').disabled = false;
+      }
+    };
+
+    recognition.onerror = (event) => {
+      // 🛠️ [버그 수정] 모바일 예열 단계에서 튀는 가벼운 에러 메세지는 화면 유실하지 않고 필터링합니다.
+      if (event.error === 'no-speech') {
+        setStatus('🎙️ 말씀을 감지하고 있습니다...', false);
+      } else {
+        setStatus(`⚠️ 음성 상태 안내: ${event.error}`, false);
+      }
+    };
+  }
+
+  function setStatus(text, isError) {
+    const badge = document.getElementById('status');
+    badge.innerText = text;
+    badge.style.background = isError ? '#fee2e2' : '#e2e8f0';
+    badge.style.color = isError ? '#dc2626' : '#475569';
+  }
+
+  function initInterview() {
+    if (typeof speechSynthesis !== 'undefined') {
+      speechSynthesis.speak(new SpeechSynthesisUtterance("")); 
+    }
+    const rawData = document.getElementById('analysis-data').value;
+    const intensity = document.getElementById('interview-type').value;
+    setStatus('AI 문항 생성 중...', false);
+    
+    fetch(GAS_WEB_APP_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "generateQuestions", rawData, intensity })
+    })
+    .then(res => res.json())
+    .then(data => {
+      interviewQuestions = data;
+      currentIdx = 0;
+      document.getElementById('setup-area').style.display = 'none';
+      document.getElementById('interview-panel').style.display = 'block';
+      document.getElementById('control-bar').style.display = 'flex';
+      renderQuestion();
+    })
+    .catch(err => { alert("통신 오류: " + err); });
+  }
+
+  function renderQuestion() {
+    if (currentIdx >= interviewQuestions.length) {
+      alert("🎉 모든 면접 문항이 끝났습니다. 고생하셨습니다!");
+      document.getElementById('control-bar').style.display = 'none';
+      return;
+    }
+    document.getElementById('feedback-container').style.display = 'none';
+    document.getElementById('student-answer').value = '';
+    document.getElementById('btn-submit').disabled = true;
+    speechTextBuffer = "";
+    
+    const q = interviewQuestions[currentIdx];
+    document.getElementById('current-question').innerHTML = `<strong>[Q${q.question_number}. ${q.type}]</strong><br>${q.question}`;
+    setStatus(`대기 중 (${currentIdx + 1} / ${interviewQuestions.length})`, false);
+    speak(q.question);
+  }
+
+  function speakCurrentQuestion() {
+    if(interviewQuestions[currentIdx]) speak(interviewQuestions[currentIdx].question);
+  }
+
+  // 🛠️ [모바일 최적화 수정] 스마트폰 마이크 딜레이 타임 가드
+  function toggleRecording() {
+    if (!recognition) return;
+    const btn = document.getElementById('btn-record');
+    
+    if (!isRecording) {
+      speechTextBuffer = ""; 
+      document.getElementById('student-answer').value = '';
+      document.getElementById('btn-submit').disabled = true;
+      
+      btn.innerText = "⏳ 연결 중...";
+      btn.style.background = "#64748b";
+      setStatus('🎙️ 모바일 마이크 오디오 엔진을 활성화하는 중입니다...', false);
+
+      // 모바일 오디오 버퍼 가동을 위한 0.3초 여유 부여 후 레코딩 기동
+      setTimeout(() => {
+        try {
+          recognition.start();
+          isRecording = true;
+          btn.innerText = "🛑 답변 종료";
+          btn.style.background = "#475569";
+          document.getElementById('status').className = "status-badge recording";
+          setStatus('🎙️ 녹음 중... 질문에 대답해 주세요.', false);
+        } catch(e) { 
+          console.log(e);
+          setStatus('⚠️ 마이크 재연결 필요', true);
+        }
+      }, 300);
+
+    } else {
+      setStatus('음성 정리 중입니다. 잠시만 기다려주세요...', false);
+      recognition.stop();
+    }
+  }
+
+  function submitAnswer() {
+    const q = interviewQuestions[currentIdx].question;
+    const ans = document.getElementById('student-answer').value;
+    setStatus('AI 채점관이 답변을 분석 중입니다...', false);
+    document.getElementById('btn-submit').disabled = true;
+    
+    fetch(GAS_WEB_APP_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "evaluateAnswer", question: q, answer: ans })
+    })
+    .then(res => res.json())
+    .then(fb => {
+      document.getElementById('fb-total').innerText = fb.total_score;
+      document.getElementById('fb-good').innerText = fb.good_point;
+      document.getElementById('fb-bad').innerText = fb.bad_point;
+      document.getElementById('fb-improved').innerText = fb.improved_answer;
+      
+      document.getElementById('feedback-container').style.display = 'block';
+      setStatus('평가 완료 리포트가 출력되었습니다.', false);
+      document.getElementById('feedback-container').scrollIntoView({ behavior: 'smooth' });
+    })
+    .catch(err => {
+      alert("평가 통신 에러: " + err);
+      document.getElementById('btn-submit').disabled = false;
+    });
+  }
+
+  function nextQuestion() {
+    currentIdx++;
+    renderQuestion();
+  }
+</script>
+</body>
+</html>
