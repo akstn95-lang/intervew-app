@@ -130,7 +130,7 @@
 <div class="app-container">
   <header>
     <h1>🎯 AI 모바일 모의 면접관</h1>
-    <p>음성 출력 호환성 완전 수정 패치 적용</p>
+    <p>안드로이드 중복 입력 및 오디오 락 완벽 수정본</p>
   </header>
 
   <div class="content">
@@ -188,7 +188,7 @@
 
 <script>
   // 🚨 [필수!] 본인의 구글 웹 앱 URL 주소를 여기에 넣어주세요.
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbykrbA_D88lHOKH4qOTw6Xn6wKthSjnWbJx8QTcYZXhC5to3deyYsvUTIBWrwTmQOnBag/exec"; 
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw4bYqjTvQmVOHx8nonTO0ngeFcB2tYJo66lCvuS14dIjQ2FlwyHo6QziGw2Df_gjDjOg/exec"; 
 
   let interviewQuestions = [];
   let currentIdx = 0;
@@ -197,14 +197,10 @@
   let voices = [];
   let speechTextBuffer = "";
 
-  window.addEventListener('DOMContentLoaded', async () => {
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach(track => track.stop());
-      } catch (err) { console.log("마이크 사전 권한 대기"); }
-    }
-    setTimeout(populateVoices, 300); // 🛠️ 모바일 딜레이 방지 패치
+  window.addEventListener('DOMContentLoaded', () => {
+    // 🛠️ [안드로이드 무음 버그 해결] 앱 시작 시 마이크 스트림을 강제로 건드리지 않고 
+    // 오직 사용자가 버튼을 눌렀을 때만 오디오 장치가 가동되도록 분리하여 락을 예방합니다.
+    setTimeout(populateVoices, 400); 
   });
 
   function populateVoices() {
@@ -219,11 +215,9 @@
     speechSynthesis.onvoiceschanged = populateVoices;
   }
 
-  // 🛠️ [음성 오류 대폭 보완] 사운드가 멈추거나 터지지 않는 현상 차단 로직
   function speak(text) {
     if (typeof speechSynthesis === 'undefined') return;
-    
-    speechSynthesis.cancel(); // 작동 중이던 음성 강제 리셋
+    speechSynthesis.cancel(); 
     
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'ko-KR';
@@ -232,12 +226,7 @@
     if (voices[select.value]) {
       utterance.voice = voices[select.value];
     }
-    
     utterance.rate = parseFloat(document.getElementById('voice-rate').value); 
-    
-    // 모바일 아이폰/안드로이드용 백그라운드 락 풀기 에러 가드
-    utterance.onerror = (e) => { console.error("TTS 에러 발생: ", e); };
-    
     speechSynthesis.speak(utterance);
   }
 
@@ -245,17 +234,25 @@
   if (SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.continuous = true;
-    recognition.interimResults = true;
+    
+    // 🛠️ [안드로이드 중복 입력 해결 1] 실시간 피드백을 수동 제어하기 위해 false로 전환합니다.
+    // 안드로이드 크롬은 false 상태에서 기기 자체 버퍼링 성능이 가장 안정적입니다.
+    recognition.interimResults = false; 
     recognition.lang = 'ko-KR';
 
     recognition.onresult = (event) => {
       let finalTranscript = '';
+      // 안드로이드 특유의 중복 매핑을 방지하기 위해, 현재 이벤트 단계의 최종 확정 데이터만 추출
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
           finalTranscript += event.results[i][0].transcript + ' ';
         }
       }
-      if (finalTranscript) speechTextBuffer += finalTranscript;
+      
+      // 🛠️ [안드로이드 중복 입력 해결 2] 이전 텍스트 버퍼와 완벽히 겹치는 문장은 누적하지 않도록 필터 가드 적용
+      if (finalTranscript.trim() && !speechTextBuffer.includes(finalTranscript.trim())) {
+        speechTextBuffer += finalTranscript;
+      }
     };
 
     recognition.onend = () => {
@@ -267,7 +264,7 @@
 
       const finalCleanText = speechTextBuffer.trim();
       if (finalCleanText === "") {
-        setStatus('⚠️ 대답이 제대로 인식되지 않았습니다.', false);
+        setStatus('⚠️ 대답이 인식되지 않았습니다. 다시 녹음해 주세요.', false);
         document.getElementById('btn-submit').disabled = true;
       } else {
         document.getElementById('student-answer').value = finalCleanText;
@@ -277,10 +274,8 @@
     };
 
     recognition.onerror = (event) => {
-      if (event.error === 'no-speech') {
-        setStatus('🎙️ 말씀을 감지하는 중입니다...', false);
-      } else {
-        setStatus(`⚠️ 안내: ${event.error}`, false);
+      if (event.error !== 'no-speech') {
+        setStatus(`⚠️ 상태: ${event.error}`, false);
       }
     };
   }
@@ -293,9 +288,11 @@
   }
 
   function initInterview() {
+    // 사용자가 첫 액션을 누르는 이 순간에 안드로이드 오디오 채널을 선점 개시합니다.
     if (typeof speechSynthesis !== 'undefined') {
-      speechSynthesis.speak(new SpeechSynthesisUtterance("")); // 사운드 채널 오픈
+      speechSynthesis.speak(new SpeechSynthesisUtterance("")); 
     }
+    
     const rawData = document.getElementById('analysis-data').value;
     const intensity = document.getElementById('interview-type').value;
     setStatus('AI 문항 생성 중...', false);
@@ -331,7 +328,6 @@
     document.getElementById('current-question').innerHTML = `<strong>[Q${q.question_number}. ${q.type}]</strong><br>${q.question}`;
     setStatus(`진행 중 (${currentIdx + 1} / ${interviewQuestions.length})`, false);
     
-    // 🛠️ 대기 후 음성 실행 안정성 강화
     setTimeout(() => { speak(q.question); }, 400);
   }
 
@@ -348,13 +344,13 @@
       document.getElementById('student-answer').value = '';
       document.getElementById('btn-submit').disabled = true;
       
-      btn.innerText = "⏳ 연결 중...";
+      btn.innerText = "⏳ 시동 중...";
       btn.style.background = "#64748b";
-      setStatus('🎙️ 마이크 시동 중...', false);
+      setStatus('🎙️ 마이크 준비 중...', false);
 
       setTimeout(() => {
         try {
-          if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); // 🛠️ 오디오 충돌 방지용 취소
+          if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); 
           recognition.start();
           isRecording = true;
           btn.innerText = "🛑 답변 종료";
@@ -367,7 +363,7 @@
       }, 300);
 
     } else {
-      setStatus('텍스트 변환 및 정리 중...', false);
+      setStatus('텍스트 변환 및 중복 필터링 중...', false);
       recognition.stop();
     }
   }
@@ -398,6 +394,12 @@
       document.getElementById('btn-submit').disabled = false;
     });
   }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && isRecording) {
+      recognition.stop();
+    }
+  });
 
   function nextQuestion() {
     currentIdx++;
