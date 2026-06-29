@@ -54,7 +54,7 @@
 <div class="app-container">
   <header>
     <h1>🎯 AI 모바일 모의 면접관</h1>
-    <p>안드로이드 오디오 락 강제 우회 적용 패치</p>
+    <p>안드로이드 오디오 강제 고정 활성화 패치</p>
   </header>
 
   <div class="content">
@@ -111,8 +111,8 @@
 </div>
 
 <script>
-  // 🚨 [필수 확인] 본인의 구글 웹 앱 URL 주소를 여기에 넣어주세요.
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwqgSrmi4oQrA7_-sBgG4CNfrtgk145UQUA9Rp1YhU5Gvsko5b7vw5wqkIEdfcJVTxUkA/exec"; 
+  // 🚨 본인의 구글 웹 앱 URL 주소를 여기에 꼭 넣어주세요.
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzZHKd2KcMkkx4UOJxJBGeWiwiQTEdmsbuk7hkVItZdsvuCq8fSvXsK4nFM0gnOiAP4eA/exec"; 
 
   let interviewQuestions = [];
   let currentIdx = 0;
@@ -137,15 +137,22 @@
     speechSynthesis.onvoiceschanged = populateVoices;
   }
 
+  // 🛠️ 안드로이드 전용 다이렉트 강제 출력 보완
   function speak(text) {
     if (typeof speechSynthesis === 'undefined') return;
+    
+    // 오디오 장치 잔여 버퍼를 완전히 초기화
     speechSynthesis.cancel(); 
     
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'ko-KR';
     const select = document.getElementById('voice-select');
-    if (voices[select.value]) utterance.voice = voices[select.value];
+    if (voices[select.value]) {
+      utterance.voice = voices[select.value];
+    }
     utterance.rate = parseFloat(document.getElementById('voice-rate').value); 
+    
+    // 강제 동기 호출 가드
     speechSynthesis.speak(utterance);
   }
 
@@ -208,11 +215,14 @@
       return;
     }
 
-    // 🛠️ [안드로이드 무음 차단 핵심 패치]
-    // 유저가 버튼을 누른 '0초' 시점에 즉시 가이드 보이스를 실행하여 
-    // 안드로이드 오디오 하드웨어 채널을 강제로 개방(Unlock)합니다.
+    // 🛠️ [타이밍 버그 완전 해결] 구글 통신을 출발하기 전에 먼저 채널 브레이크를 걸고 
+    // "생성 중입니다" 멘트를 아주 짧고 명확하게 때려넣어 안드로이드 오디오 락을 선제 차단합니다.
     if (typeof speechSynthesis !== 'undefined') {
-      speak("입력된 데이터를 기반으로 면접 문항을 생성 중입니다. 잠시만 기다려 주세요.");
+      speechSynthesis.cancel();
+      const testUtterance = new SpeechSynthesisUtterance("문항 생성 중");
+      testUtterance.lang = "ko-KR";
+      testUtterance.volume = 0; // 혹시 시끄러울 수 있으니 무음 스트림으로 통로만 개방
+      speechSynthesis.speak(testUtterance);
     }
     
     const intensity = document.getElementById('interview-type').value;
@@ -249,8 +259,8 @@
     document.getElementById('current-question').innerHTML = `<strong>[Q${q.question_number}. ${q.type}]</strong><br>${q.question}`;
     setStatus(`진행 중 (${currentIdx + 1} / ${interviewQuestions.length})`, false);
     
-    // 이미 채널이 열려있으므로 비동기 데이터도 정상 출력됩니다.
-    speak(q.question);
+    // 오디오 버퍼 안정화를 위해 아주 미세한 지연 후 진짜 질문 재생
+    setTimeout(() => { speak(q.question); }, 200);
   }
 
   function speakCurrentQuestion() {
