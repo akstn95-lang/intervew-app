@@ -54,7 +54,7 @@
 <div class="app-container">
   <header>
     <h1>🎯 AI 모의 면접관 <span style="font-size:0.8rem; vertical-align:middle; background:#2563eb; color:#fff; padding:2px 6px; border-radius:4px;">v1.1</span></h1>
-    <p>한국어 강제 고정 및 문항 선택 확장 버전</p>
+    <p>표준 160대입 기출 데이터셋 연동 버전</p>
   </header>
 
   <div class="content">
@@ -82,7 +82,7 @@
           <option value="10">10문항 (의약학/실전형 풀 세션)</option>
         </select>
 
-        <label style="font-size:0.85rem; font-weight:600; color:#475569;">발화 면접관 목소리</label>
+        <label style="font-size:0.85rem; font-weight:600; color:#475569;">발화 면접관 목소리 고정</label>
         <select id="voice-select" class="select-box"><option value="default">한국어 기본 시스템 음성</option></select>
         
         <div class="range-box">
@@ -137,8 +137,8 @@
 </div>
 
 <script>
-  // 🚨 본인의 구글 웹 앱 URL 주소를 여기에 꼭 업데이트 해 주셔야 합니다!
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwi4umqojUG7Tkk-URR1sotqRWn1plskv3UydrriF_L6Bcx4L3f42mp04-0CC3ZMWZWDQ/exec"; 
+  // 🚨 [필수 업데이트] 본인의 구글 웹 앱 URL 주소를 이곳에 꼭 넣어주세요!
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyVmZAtlqNbTAOJ5IvU_xVaTdVscEZ9p3Bylv5oeSyJTgssF_d7IfaAX0ahvH6xBjcpog/exec"; 
 
   let interviewQuestions = [];
   let currentIdx = 0;
@@ -173,11 +173,8 @@
     }
   }
 
-  // 🛠️ [오류 수정 1] 인도어 등 외래어 혼선 버그 원천 차단 필터
   function populateVoices() {
     if (typeof speechSynthesis === 'undefined') return;
-    
-    // 한국어 언어코드(ko, ko-KR, KO)만 완벽하게 걸러내어 격리 조치
     voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith('ko') || v.lang.startsWith('KO'));
     
     const select = document.getElementById('voice-select');
@@ -191,21 +188,18 @@
     speechSynthesis.onvoiceschanged = populateVoices;
   }
 
-  // 🛠️ [오류 수정 2] 스마트폰 강제 한국어 출력 파이프 고정
   function speak(text) {
     if (typeof speechSynthesis === 'undefined') return;
     speechSynthesis.cancel(); 
     
     const utterance = new SpeechSynthesisUtterance(text);
-    
-    // 브라우저 내부 하드웨어의 타겟 주소를 한국어로 강제 픽스
     utterance.lang = 'ko-KR'; 
     
     const select = document.getElementById('voice-select');
     if (voices[select.value]) {
       utterance.voice = voices[select.value];
     } else if (voices.length > 0) {
-      utterance.voice = voices[0]; // 셀렉트박스 꼬임 방지용 예비 락
+      utterance.voice = voices[0];
     }
     
     utterance.rate = parseFloat(document.getElementById('voice-rate').value); 
@@ -288,7 +282,7 @@
       document.getElementById('control-bar').style.display = 'flex';
       renderQuestion();
     })
-    .catch(err => { alert("통신 오류가 발생했습니다. 구글 배포 상태를 재점검하세요."); });
+    .catch(err => { alert("통신 오류가 발생했습니다. 구글 서버 배포 설정을 확인하세요."); });
   }
 
   function renderQuestion() {
