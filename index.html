@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AI 모바일 모의 면접관 v1.7.6</title>
+  <title>AI 모바일 모의 면접관 v1.7.1</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -53,8 +53,8 @@
 
 <div class="app-container">
   <header>
-    <h1>🎯 AI 모의 면접관 <span style="font-size:0.8rem; vertical-align:middle; background:#2563eb; color:#fff; padding:2px 6px; border-radius:4px;">v1.7.6</span></h1>
-    <p>답변 제출 강제 동기화 및 락 해제 완료 패치</p>
+    <h1>🎯 AI 모의 면접관 <span style="font-size:0.8rem; vertical-align:middle; background:#2563eb; color:#fff; padding:2px 6px; border-radius:4px;">v1.7.1</span></h1>
+    <p>CORS 및 도메인 파이프라인 완전 수정 배포판</p>
   </header>
 
   <div class="content">
@@ -140,8 +140,8 @@
 </div>
 
 <script>
-  // 🚨 [필수 확인] 본인의 구글 웹 앱 URL 주소를 여기에 꼭 교체해 주세요!
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxzmiayyjGS_4UApSJfbigHv8-OgwL-Zw4d0gapcXWJqJG8pfMgiQZBjYjUjUOXagXdVQ/exec"; 
+  // 🚨 [매우 중요] XXXXX 부분에 새로 배포한 주소를 따옴표 두 개 안에 확실히 치환해 주세요!
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzUMvjx2xWM4jXCehjLP6GzA3FfhWUA0Mojx5kbX7AH2MfcGp6EEX_Y4m6MKYc6J5mkxA/exec"; 
 
   let interviewQuestions = [];
   let currentIdx = 0;
@@ -219,33 +219,24 @@
     };
 
     recognition.onend = () => {
-      // 안드로이드 하드웨어 세션이 살아있는 상태에서 예기치 않게 끊긴 경우만 재시동
       if (isRecording) {
         try { recognition.start(); } catch(e) {}
         return;
       }
-      updateUIOnRecordEnd();
+      const btn = document.getElementById('btn-record');
+      btn.innerText = "🎤 답변 시작"; btn.style.background = "#dc2626";
+      document.getElementById('status').className = "status-badge";
+
+      const finalCleanText = finalSpeechResult.trim();
+      if (finalCleanText === "") {
+        setStatus('⚠️ 대답이 인식되지 않았습니다. 다시 녹음해 주세요.', false);
+        document.getElementById('btn-submit').disabled = true;
+      } else {
+        document.getElementById('student-answer').value = finalCleanText;
+        setStatus('📱 답변 인식 완료', false);
+        document.getElementById('btn-submit').disabled = false;
+      }
     };
-  }
-
-  // 🛠️ [버그 수정 코어] 음성 인식이 끝났을 때 UI를 동기화하고 강제로 락을 해제하는 독립 루틴
-  function updateUIOnRecordEnd() {
-    const btn = document.getElementById('btn-record');
-    btn.innerText = "🎤 답변 시작"; btn.style.background = "#dc2626";
-    document.getElementById('status').className = "status-badge";
-
-    const finalCleanText = finalSpeechResult.trim();
-    document.getElementById('student-answer').value = finalCleanText;
-
-    // 텍스트 존재 유무와 관계없이, 사용자가 녹음을 수동 종료했다면 제출 버튼 락을 강제로 완전히 해제합니다.
-    if (finalCleanText === "") {
-      setStatus('⚠️ 대답이 인식되지 않았습니다. 직접 입력하거나 다시 녹음해 주세요.', false);
-      // 공백 상태여도 버튼을 눌러 통과 요청이나 수동 처리가 가능하도록 열어둡니다.
-      document.getElementById('btn-submit').disabled = false; 
-    } else {
-      setStatus('📱 답변 인식 완료', false);
-      document.getElementById('btn-submit').disabled = false;
-    }
   }
 
   function setStatus(text, isError) {
@@ -273,6 +264,7 @@
     const intensity = document.getElementById('interview-type').value;
     setStatus('Claude AI 문항 정밀 생성 중... (최대 10초 소요)', false);
     
+    // 주소 꼬임 방지를 위한 표준 fetch 호출 처리
     fetch(GAS_WEB_APP_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain" },
@@ -364,11 +356,7 @@
         } catch(e) { isRecording = false; }
       }, 300);
     } else {
-      // 사용자가 수동으로 답변 종료를 누르는 시점
-      isRecording = false; 
-      try { recognition.stop(); } catch(e) {}
-      // 🛠️ 안드로이드 OS의 무반응 현상을 방지하기 위해 강제로 비활성화를 풀고 동기화 선선언
-      updateUIOnRecordEnd(); 
+      isRecording = false; recognition.stop();
     }
   }
 
