@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AI 모바일 모의 면접관 v1.7</title>
+  <title>AI 모바일 모의 면접관 v1.7.1</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -53,8 +53,8 @@
 
 <div class="app-container">
   <header>
-    <h1>🎯 AI 모의 면접관 <span style="font-size:0.8rem; vertical-align:middle; background:#2563eb; color:#fff; padding:2px 6px; border-radius:4px;">v1.7</span></h1>
-    <p>Claude 3.5 Sonnet 실시간 엔진 연동 버전</p>
+    <h1>🎯 AI 모의 면접관 <span style="font-size:0.8rem; vertical-align:middle; background:#2563eb; color:#fff; padding:2px 6px; border-radius:4px;">v1.7.1</span></h1>
+    <p>CORS 및 도메인 파이프라인 완전 수정 배포판</p>
   </header>
 
   <div class="content">
@@ -73,7 +73,7 @@
       </div>
 
       <div class="card">
-        <h2>면접 알고리즘 세부 설정</h2>
+        <h2>면접관 세부 옵션</h2>
         <label style="font-size:0.85rem; font-weight:600; color:#475569;">목표 면접 문항 개수 설정</label>
         <select id="question-count" class="select-box">
           <option value="3">3문항 (미니 테스트)</option>
@@ -140,8 +140,8 @@
 </div>
 
 <script>
-  // 🚨 [필수 확인] 본인의 구글 웹 앱 URL 주소를 여기에 꼭 교체해 주세요!
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwa8_h0hAP2JJAUDoj0IAUoLGNuUW3X6-Fv8dKnWg2LtslkotQOOwZkOLNifEfjllpMCg/exec"; 
+  // 🚨 [매우 중요] XXXXX 부분에 새로 배포한 주소를 따옴표 두 개 안에 확실히 치환해 주세요!
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz29XifWKYaX58WP-TC_24LZwc9WGERJ0qsZlqDmdugzSUng2T0t68w31OygXa3rQay_Q/exec"; 
 
   let interviewQuestions = [];
   let currentIdx = 0;
@@ -165,10 +165,8 @@
   });
 
   function saveStorageData() {
-    const data = document.getElementById('analysis-data').value;
-    const email = document.getElementById('user-email').value;
-    localStorage.setItem('interview_raw_data', data);
-    localStorage.setItem('interview_user_email', email);
+    localStorage.setItem('interview_raw_data', document.getElementById('analysis-data').value);
+    localStorage.setItem('interview_user_email', document.getElementById('user-email').value);
     alert("💾 데이터가 스마트폰 브라우저에 영구 저장되었습니다.");
   }
 
@@ -176,14 +174,13 @@
     if(confirm("기존 입력된 데이터를 완전히 초기화할까요?")) {
       localStorage.removeItem('interview_raw_data');
       document.getElementById('analysis-data').value = "";
-      alert("초기화되었습니다. 새로운 데이터를 입력하세요.");
+      alert("초기화되었습니다.");
     }
   }
 
   function populateVoices() {
     if (typeof speechSynthesis === 'undefined') return;
     const filtered = speechSynthesis.getVoices().filter(v => v.lang.startsWith('ko') || v.lang.startsWith('KO') || v.lang === 'ko_KR');
-    
     if (filtered.length !== voices.length) {
       voices = filtered;
       const select = document.getElementById('voice-select');
@@ -240,7 +237,6 @@
         document.getElementById('btn-submit').disabled = false;
       }
     };
-    recognition.onerror = (e) => { if (e.error !== 'no-speech') console.log(e.error); };
   }
 
   function setStatus(text, isError) {
@@ -266,10 +262,12 @@
     }
     
     const intensity = document.getElementById('interview-type').value;
-    setStatus('AI 문항 대규모 분석 생성 중... (최대 10초 소요)', false);
+    setStatus('Claude AI 문항 정밀 생성 중... (최대 10초 소요)', false);
     
+    // 주소 꼬임 방지를 위한 표준 fetch 호출 처리
     fetch(GAS_WEB_APP_URL, {
       method: "POST",
+      headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({ action: "generateQuestions", rawData: rawData, intensity: intensity, count: count })
     })
     .then(res => res.json())
@@ -282,7 +280,7 @@
       document.getElementById('control-bar').style.display = 'flex';
       renderQuestion();
     })
-    .catch(err => { alert("통신 오류가 발생했습니다. Claude API 연동 상태 및 스크립트 속성을 재점검하세요."); });
+    .catch(err => { alert("통신 오류가 발생했습니다. 코드 맨 위의 구글 웹 앱 URL 주소 치환 상태를 다시 확인하세요."); });
   }
 
   function renderQuestion() {
@@ -304,11 +302,7 @@
     document.getElementById('btn-submit').disabled = true;
     finalSpeechResult = ""; 
     
-    if (currentIdx === 0) {
-      document.getElementById('btn-prev').disabled = true;
-    } else {
-      document.getElementById('btn-prev').disabled = false;
-    }
+    document.getElementById('btn-prev').disabled = (currentIdx === 0);
     
     const q = interviewQuestions[currentIdx];
     document.getElementById('current-question').innerHTML = `<strong>[Q${q.question_number}. ${q.type}]</strong><br>${q.question}`;
@@ -375,13 +369,8 @@
     
     fetch(GAS_WEB_APP_URL, {
       method: "POST",
-      body: JSON.stringify({ 
-        action: "evaluateAnswer", 
-        question: q, 
-        type: qType, 
-        answer: ans, 
-        intensity: document.getElementById('interview-type').value 
-      })
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ action: "evaluateAnswer", question: q, type: qType, answer: ans, intensity: document.getElementById('interview-type').value })
     })
     .then(res => res.json())
     .then(fb => {
@@ -408,6 +397,7 @@
     
     fetch(GAS_WEB_APP_URL, {
       method: "POST",
+      headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({ action: "sendEmailReport", email: email, history: interviewHistory })
     })
     .then(res => res.json())
