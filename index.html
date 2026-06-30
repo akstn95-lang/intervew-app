@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AI 모바일 모의 면접관 v1.6</title>
+  <title>AI 모바일 모의 면접관 v1.7</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -53,8 +53,8 @@
 
 <div class="app-container">
   <header>
-    <h1>🎯 AI 모의 면접관 <span style="font-size:0.8rem; vertical-align:middle; background:#2563eb; color:#fff; padding:2px 6px; border-radius:4px;">v1.6</span></h1>
-    <p>사정관 평가 10대 요약 평정 루틴 반영 버전</p>
+    <h1>🎯 AI 모의 면접관 <span style="font-size:0.8rem; vertical-align:middle; background:#2563eb; color:#fff; padding:2px 6px; border-radius:4px;">v1.7</span></h1>
+    <p>Claude 3.5 Sonnet 실시간 엔진 연동 버전</p>
   </header>
 
   <div class="content">
@@ -109,10 +109,13 @@
       </div>
 
       <div id="feedback-container" class="feedback-box" style="display:none;">
-        <h3 style="margin-top:0; color:#166534;">📊 AI 입학사정관 정밀 피드백</h3>
+        <h3 style="margin-top:0; color:#166534;">📊 AI 입학사정관 실시간 피드백</h3>
         <p><strong>평정 점수:</strong> <span id="fb-total" style="font-weight:bold; color:#166534;">0</span>점</p>
         <p style="font-size:0.9rem; line-height:1.4; color:#1e3a8a;"><strong style="color:#2563eb;">✔ 우수한 장점 분석:</strong><br><span id="fb-good"></span></p>
         <p style="font-size:0.9rem; line-height:1.4; color:#991b1b;"><strong style="color:#dc2626;">⚠️ 사정관 관점 보완점:</strong><br><span id="fb-bad"></span></p>
+        <div style="background:#fff; padding:12px; border-radius:10px; border:1px solid #e2e8f0; margin-top:10px;">
+          <strong style="color:#475569;">💡 추천 모범 가이드방향:</strong><br><span id="fb-improved" style="color:#334155; font-size:0.9rem;"></span>
+        </div>
         <button class="btn btn-primary" onclick="nextQuestion()" style="margin-top:16px; width:100%; font-size:1rem; padding:12px;">다음 문항으로 이동 ➡️</button>
       </div>
 
@@ -138,7 +141,7 @@
 
 <script>
   // 🚨 [필수 확인] 본인의 구글 웹 앱 URL 주소를 여기에 꼭 교체해 주세요!
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxuhS_g9FfYygt2lctl4FUCFaZkYqeoClLA_NXVgD9mbiNeU02kGPboZ-3991bOOtpU/exec"; 
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwa8_h0hAP2JJAUDoj0IAUoLGNuUW3X6-Fv8dKnWg2LtslkotQOOwZkOLNifEfjllpMCg/exec"; 
 
   let interviewQuestions = [];
   let currentIdx = 0;
@@ -263,7 +266,7 @@
     }
     
     const intensity = document.getElementById('interview-type').value;
-    setStatus('AI 문항 생성 중...', false);
+    setStatus('AI 문항 대규모 분석 생성 중... (최대 10초 소요)', false);
     
     fetch(GAS_WEB_APP_URL, {
       method: "POST",
@@ -279,7 +282,7 @@
       document.getElementById('control-bar').style.display = 'flex';
       renderQuestion();
     })
-    .catch(err => { alert("통신 오류가 발생했습니다. 구글 서버 배포 상태를 다시 확인하세요."); });
+    .catch(err => { alert("통신 오류가 발생했습니다. Claude API 연동 상태 및 스크립트 속성을 재점검하세요."); });
   }
 
   function renderQuestion() {
@@ -365,7 +368,7 @@
 
   function submitAnswer() {
     const q = interviewQuestions[currentIdx].question;
-    const qType = interviewQuestions[currentIdx].type; // 💡 [v1.6 추가] 질문 카테고리 정보 패치
+    const qType = interviewQuestions[currentIdx].type; 
     const ans = document.getElementById('student-answer').value;
     setStatus('AI 채점 분석 중...', false);
     document.getElementById('btn-submit').disabled = true;
@@ -385,6 +388,7 @@
       document.getElementById('fb-total').innerText = fb.total_score;
       document.getElementById('fb-good').innerText = fb.good_point;
       document.getElementById('fb-bad').innerText = fb.bad_point;
+      document.getElementById('fb-improved').innerText = fb.improved_answer;
       
       interviewHistory.push({
         type: qType, question: q, answer: ans,
